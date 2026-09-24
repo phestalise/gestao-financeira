@@ -1,0 +1,68 @@
+import { getDb, OWNER_ID } from "@/lib/firebase/admin";
+import { Transaction } from "@/types";
+
+function collection() {
+  return getDb().collection("users").doc(OWNER_ID).collection("transactions");
+}
+
+export interface TransactionFilters {
+  from?: string; // ISO date
+  to?: string; // ISO date
+  categoryId?: string;
+  type?: Transaction["type"];
+}
+
+export async function listTransactions(filters: TransactionFilters = {}): Promise<Transaction[]> {
+  let query: FirebaseFirestore.Query = collection();
+
+  if (filters.from) query = query.where("date", ">=", filters.from);
+  if (filters.to) query = query.where("date", "<=", filters.to);
+  if (filters.categoryId) query = query.where("categoryId", "==", filters.categoryId);
+  if (filters.type) query = query.where("type", "==", filters.type);
+
+  const snapshot = await query.orderBy("date", "desc").get();
+  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Transaction);
+}
+
+export async function getTransaction(id: string): Promise<Transaction | null> {
+  const doc = await collection().doc(id).get();
+  if (!doc.exists) return null;
+  return { id: doc.id, ...doc.data() } as Transaction;
+}
+
+export async function createTransaction(
+  data: Omit<Transaction, "id" | "createdAt" | "updatedAt">
+): Promise<Transaction> {
+  const now = new Date().toISOString();
+  const docRef = await collection().add({ ...data, createdAt: now, updatedAt: now });
+  const doc = await docRef.get();
+  return { id: doc.id, ...doc.data() } as Transaction;
+}
+
+export async function updateTransaction(
+  id: string,
+  data: Partial<Omit<Transaction, "id" | "createdAt">>
+): Promise<Transaction | null> {
+  const ref = collection().doc(id);
+  const existing = await ref.get();
+  if (!existing.exists) return null;
+
+  await ref.update({ ...data, updatedAt: new Date().toISOString() });
+  const updated = await ref.get();
+  return { id: updated.id, ...updated.data() } as Transaction;
+}
+
+export async function deleteTransaction(id: string): Promise<boolean> {
+  const ref = collection().doc(id);
+  const existing = await ref.get();
+  if (!existing.exists) return false;
+  await ref.delete();
+  return true;
+}
+
+export async function getLastTransaction(): Promise<Transaction | null> {
+  const snapshot = await collection().orderBy("createdAt", "desc").limit(1).get();
+  if (snapshot.empty) return null;
+  const doc = snapshot.docs[0];
+  return { id: doc.id, ...doc.data() } as Transaction;
+}
