@@ -20,9 +20,10 @@ export async function middleware(req: NextRequest) {
   try {
     expected = await getExpectedSessionToken();
   } catch {
-    // Credenciais de sessão não configuradas ainda — deixa passar para não travar o dev local
-    // antes do .env.local estar preenchido, mas isso deve ser corrigido antes do deploy.
-    return NextResponse.next();
+    // Credenciais de sessão não configuradas: em dev deixa passar para não travar o setup local;
+    // em produção bloqueia tudo para não expor os dados.
+    if (process.env.NODE_ENV !== "production") return NextResponse.next();
+    return new NextResponse("App não configurado: defina APP_PASSCODE e APP_SECRET.", { status: 503 });
   }
 
   if (cookie === expected) return NextResponse.next();
