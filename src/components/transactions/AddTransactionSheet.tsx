@@ -7,7 +7,7 @@ import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { CategoryIcon } from "@/components/ui/CategoryIcon";
+import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from "@/constants/categories";
 import { today } from "@/lib/utils/date";
 import { TransactionType } from "@/types";
@@ -100,17 +100,26 @@ export function AddTransactionSheet({ open, onClose, initialValues, editId }: Pr
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
-      <div className="max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-[var(--surface)] p-6 sm:max-w-md sm:rounded-3xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{editId ? "Editar movimentação" : "Adicionar movimentação"}</h2>
-          <button onClick={onClose} aria-label="Fechar" className="rounded-full p-2 hover:bg-[var(--surface-muted)]">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-[2px] sm:items-center">
+      <div className="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl bg-[var(--surface)] sm:max-w-md sm:rounded-3xl">
+        <div className="flex justify-center pt-2.5 sm:hidden">
+          <div className="h-1 w-9 rounded-full bg-[var(--border-strong)]" />
+        </div>
+
+        <div className="flex items-center justify-between px-6 pb-4 pt-3 sm:pt-6">
+          <h2 className="text-lg font-semibold tracking-tight">
+            {editId ? "Editar movimentação" : "Adicionar movimentação"}
+          </h2>
+          <button onClick={onClose} aria-label="Fechar" className="rounded-full p-2 hover:bg-[var(--surface-2)]">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-2 rounded-xl bg-[var(--surface-muted)] p-1">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex-1 space-y-5 overflow-y-auto px-6 pb-[max(env(safe-area-inset-bottom),1.5rem)]"
+        >
+          <div className="grid grid-cols-2 gap-1 rounded-xl bg-[var(--surface-2)] p-1">
             {(["expense", "income"] as const).map((t) => (
               <button
                 key={t}
@@ -119,8 +128,10 @@ export function AddTransactionSheet({ open, onClose, initialValues, editId }: Pr
                   setValue("type", t);
                   setValue("categoryId", "");
                 }}
-                className={`rounded-lg py-2 text-sm font-medium transition-colors ${
-                  type === t ? "bg-[var(--surface)] shadow-sm" : "text-[var(--muted)]"
+                className={`rounded-lg py-2 text-sm font-medium transition-all ${
+                  type === t
+                    ? "bg-[var(--surface)] text-[var(--foreground)] shadow-sm"
+                    : "text-[var(--muted)]"
                 }`}
               >
                 {t === "expense" ? "Saída" : "Entrada"}
@@ -129,15 +140,15 @@ export function AddTransactionSheet({ open, onClose, initialValues, editId }: Pr
           </div>
 
           <div>
-            <label className="mb-1 block text-sm text-[var(--muted)]">Valor</label>
-            <div className="flex items-center rounded-xl border border-[var(--border)] px-3">
-              <span className="text-[var(--muted)]">R$</span>
+            <label className="mb-2 block text-sm text-[var(--muted)]">Valor</label>
+            <div className="flex items-baseline justify-center gap-1.5 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-5">
+              <span className="text-xl font-medium text-[var(--muted)]">R$</span>
               <input
                 type="number"
                 step="0.01"
                 inputMode="decimal"
                 autoFocus
-                className="w-full bg-transparent px-2 py-3 text-lg outline-none"
+                className="w-full max-w-[12rem] bg-transparent text-center text-4xl font-semibold tracking-tight tabular-nums outline-none"
                 placeholder="0,00"
                 {...register("amount")}
               />
@@ -146,7 +157,7 @@ export function AddTransactionSheet({ open, onClose, initialValues, editId }: Pr
           </div>
 
           <div>
-            <label className="mb-1 block text-sm text-[var(--muted)]">Categoria</label>
+            <label className="mb-2 block text-sm text-[var(--muted)]">Categoria</label>
             <div className="grid grid-cols-4 gap-2">
               {categories.map((c) => {
                 const selected = watch("categoryId") === c.id;
@@ -155,14 +166,16 @@ export function AddTransactionSheet({ open, onClose, initialValues, editId }: Pr
                     key={c.id}
                     type="button"
                     onClick={() => setValue("categoryId", c.id, { shouldValidate: true })}
-                    className={`flex flex-col items-center gap-1 rounded-xl border p-2 text-center transition-colors ${
+                    className={`flex flex-col items-center gap-1.5 rounded-xl border p-2 pt-2.5 text-center transition-all ${
                       selected
-                        ? "border-[var(--primary)] bg-[var(--primary)]/10"
-                        : "border-[var(--border)] hover:bg-[var(--surface-muted)]"
+                        ? "border-[var(--primary)] bg-[var(--primary-soft)]"
+                        : "border-transparent hover:bg-[var(--surface-2)]"
                     }`}
                   >
-                    <CategoryIcon icon={c.icon} className="h-5 w-5" />
-                    <span className="text-[10px] leading-tight">{c.name}</span>
+                    <CategoryBadge categoryId={c.id} icon={c.icon} size="sm" />
+                    <span className="line-clamp-2 text-[10px] leading-tight text-[var(--muted)]">
+                      {c.name}
+                    </span>
                   </button>
                 );
               })}
@@ -175,7 +188,7 @@ export function AddTransactionSheet({ open, onClose, initialValues, editId }: Pr
           <div>
             <label className="mb-1 block text-sm text-[var(--muted)]">Descrição</label>
             <input
-              className="w-full rounded-xl border border-[var(--border)] px-3 py-3 outline-none focus:border-[var(--primary)]"
+              className="w-full rounded-xl border border-[var(--border)] px-3 py-3 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-strong)]/35 transition-shadow"
               placeholder="Exemplo: Gasolina"
               {...register("description")}
             />
@@ -189,14 +202,14 @@ export function AddTransactionSheet({ open, onClose, initialValues, editId }: Pr
               <label className="mb-1 block text-sm text-[var(--muted)]">Data</label>
               <input
                 type="date"
-                className="w-full rounded-xl border border-[var(--border)] px-3 py-3 outline-none focus:border-[var(--primary)]"
+                className="w-full rounded-xl border border-[var(--border)] px-3 py-3 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-strong)]/35 transition-shadow"
                 {...register("date")}
               />
             </div>
             <div>
               <label className="mb-1 block text-sm text-[var(--muted)]">Pagamento</label>
               <select
-                className="w-full rounded-xl border border-[var(--border)] px-3 py-3 outline-none focus:border-[var(--primary)]"
+                className="w-full rounded-xl border border-[var(--border)] px-3 py-3 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-strong)]/35 transition-shadow"
                 {...register("paymentMethod")}
               >
                 <option value="">Não informado</option>
@@ -213,7 +226,7 @@ export function AddTransactionSheet({ open, onClose, initialValues, editId }: Pr
             <label className="mb-1 block text-sm text-[var(--muted)]">Observação (opcional)</label>
             <textarea
               rows={2}
-              className="w-full rounded-xl border border-[var(--border)] px-3 py-2 outline-none focus:border-[var(--primary)]"
+              className="w-full rounded-xl border border-[var(--border)] px-3 py-2 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-strong)]/35 transition-shadow"
               {...register("note")}
             />
           </div>

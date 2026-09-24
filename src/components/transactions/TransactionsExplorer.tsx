@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Pencil, Trash2 } from "lucide-react";
+import { Search, Pencil, Trash2, SearchX } from "lucide-react";
 import { Transaction } from "@/types";
 import { Card } from "@/components/ui/Card";
-import { CategoryIcon } from "@/components/ui/CategoryIcon";
+import { CategoryBadge } from "@/components/ui/CategoryBadge";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { AddTransactionSheet } from "@/components/transactions/AddTransactionSheet";
 import { getCategoryById } from "@/constants/categories";
 import { formatCurrency } from "@/lib/utils/currency";
@@ -48,16 +49,14 @@ export function TransactionsExplorer({ initialTransactions }: { initialTransacti
 
       <Card className="divide-y divide-[var(--border)] p-2">
         {filtered.length === 0 ? (
-          <p className="p-6 text-center text-sm text-[var(--muted)]">Nenhuma movimentação encontrada.</p>
+          <EmptyState icon={SearchX} title="Nenhuma movimentação encontrada" />
         ) : (
           filtered.map((t) => {
             const category = getCategoryById(t.categoryId);
             return (
               <div key={t.id} className="flex items-center justify-between gap-3 p-3">
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--surface-muted)]">
-                    <CategoryIcon icon={category?.icon ?? "circle"} className="h-4.5 w-4.5" />
-                  </div>
+                  <CategoryBadge categoryId={t.categoryId} icon={category?.icon ?? "more-horizontal"} />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{t.description}</p>
                     <p className="truncate text-xs text-[var(--muted)]">
@@ -67,7 +66,7 @@ export function TransactionsExplorer({ initialTransactions }: { initialTransacti
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   <p
-                    className={`mr-1 text-sm font-medium ${
+                    className={`mr-1 text-sm font-medium tabular-nums ${
                       t.type === "income" ? "text-[var(--positive)]" : "text-[var(--foreground)]"
                     }`}
                   >
@@ -77,7 +76,7 @@ export function TransactionsExplorer({ initialTransactions }: { initialTransacti
                   <button
                     onClick={() => setEditing(t)}
                     aria-label="Editar"
-                    className="rounded-lg p-2 hover:bg-[var(--surface-muted)]"
+                    className="rounded-lg p-2 hover:bg-[var(--surface-2)]"
                   >
                     <Pencil className="h-4 w-4 text-[var(--muted)]" />
                   </button>
@@ -85,7 +84,7 @@ export function TransactionsExplorer({ initialTransactions }: { initialTransacti
                     onClick={() => handleDelete(t.id)}
                     disabled={deletingId === t.id}
                     aria-label="Excluir"
-                    className="rounded-lg p-2 hover:bg-[var(--negative-bg)]"
+                    className="rounded-lg p-2 hover:bg-[var(--negative-soft)]"
                   >
                     <Trash2 className="h-4 w-4 text-[var(--negative)]" />
                   </button>

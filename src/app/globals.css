@@ -1,68 +1,144 @@
 @import "tailwindcss";
 
+/* Escuro é o padrão do app (identidade preto/azul/branco). O claro fica em [data-theme="light"]. */
 :root {
-  --background: #f7f8fa;
-  --surface: #ffffff;
-  --surface-muted: #f1f3f6;
-  --border: #e6e8ec;
-  --foreground: #12141a;
-  --muted: #6b7280;
-  --primary: #2563eb;
+  --background: #000000;
+  --surface: #121317;
+  --surface-2: #1a1c22;
+  --surface-hover: #24272f;
+  --border: #2e323c;
+  --border-strong: #40454f;
+  --foreground: #ffffff;
+  --muted: #9aa1b0;
+  --muted-2: #6d7382;
+
+  --primary: #0f52ba;
+  --primary-strong: #8ed2f5;
   --primary-foreground: #ffffff;
-  --positive: #16a34a;
-  --positive-bg: #ecfdf3;
-  --negative: #dc2626;
-  --negative-bg: #fef2f2;
-  --warning: #d97706;
-  --warning-bg: #fffbeb;
+  --primary-soft: #0f1f42;
+
+  --positive: #2ee596;
+  --positive-soft: #0f2a1f;
+  --negative: #ff4d6a;
+  --negative-soft: #33141b;
+  --warning: #ffb020;
+  --warning-soft: #302410;
+
+  --shadow-color: 220 90% 0%;
+  --hero-gradient: linear-gradient(160deg, #0f52ba 0%, #003868 100%);
+
+  /* navegação: identidade fixa preta/azul, igual em qualquer tema de conteúdo (Azul Safira) */
+  --nav-bg: #000000;
+  --nav-border: rgba(255, 255, 255, 0.1);
+  --nav-fg: rgba(255, 255, 255, 0.55);
+  --nav-fg-hover: rgba(255, 255, 255, 0.9);
+  --nav-accent: #2f6fd6;
+  --nav-accent-soft: rgba(47, 111, 214, 0.2);
+
+  /* paleta categórica (8 tons) — usada para diferenciar categorias visualmente */
+  --cat-0-bg: hsl(217 45% 24%);
+  --cat-0-fg: hsl(217 90% 76%);
+  --cat-1-bg: hsl(245 40% 26%);
+  --cat-1-fg: hsl(245 85% 80%);
+  --cat-2-bg: hsl(265 38% 27%);
+  --cat-2-fg: hsl(265 85% 80%);
+  --cat-3-bg: hsl(300 32% 24%);
+  --cat-3-fg: hsl(300 80% 80%);
+  --cat-4-bg: hsl(28 48% 22%);
+  --cat-4-fg: hsl(28 95% 70%);
+  --cat-5-bg: hsl(42 48% 20%);
+  --cat-5-fg: hsl(45 90% 64%);
+  --cat-6-bg: hsl(185 38% 18%);
+  --cat-6-fg: hsl(185 70% 64%);
+  --cat-7-bg: hsl(199 42% 20%);
+  --cat-7-fg: hsl(199 85% 70%);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
-  --color-surface-muted: var(--surface-muted);
+  --color-surface-2: var(--surface-2);
+  --color-surface-hover: var(--surface-hover);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
+  --color-muted-2: var(--muted-2);
   --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
   --color-positive: var(--positive);
-  --color-positive-bg: var(--positive-bg);
+  --color-positive-soft: var(--positive-soft);
   --color-negative: var(--negative);
-  --color-negative-bg: var(--negative-bg);
+  --color-negative-soft: var(--negative-soft);
   --color-warning: var(--warning);
-  --color-warning-bg: var(--warning-bg);
+  --color-warning-soft: var(--warning-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0b0c0f;
-    --surface: #16181d;
-    --surface-muted: #1d2026;
-    --border: #2a2d34;
-    --foreground: #f2f3f5;
-    --muted: #9aa0ac;
-    --primary: #3b82f6;
+:root[data-theme="light"] {
+    --background: #f6f7fb;
+    --surface: #ffffff;
+    --surface-2: #f0f2f7;
+    --surface-hover: #e8eaf1;
+    --border: #e4e7ee;
+    --border-strong: #d3d7e3;
+    --foreground: #12141c;
+    --muted: #6b7280;
+    --muted-2: #9096a5;
+
+    --primary: #0f52ba;
+    --primary-strong: #8ed2f5;
     --primary-foreground: #ffffff;
-    --positive: #22c55e;
-    --positive-bg: #10241a;
-    --negative: #ef4444;
-    --negative-bg: #2a1414;
-    --warning: #f59e0b;
-    --warning-bg: #2a2010;
-  }
+    --primary-soft: #e7eefb;
+
+    --positive: #0f9d58;
+    --positive-soft: #e7f7ee;
+    --negative: #e11d3f;
+    --negative-soft: #fdecef;
+    --warning: #b6740a;
+    --warning-soft: #fbf1de;
+
+    --shadow-color: 220 30% 60%;
+    --hero-gradient: linear-gradient(160deg, #0f52ba 0%, #003868 100%);
+
+    --cat-0-bg: hsl(217 85% 94%);
+    --cat-0-fg: hsl(217 75% 42%);
+    --cat-1-bg: hsl(245 80% 95%);
+    --cat-1-fg: hsl(245 65% 48%);
+    --cat-2-bg: hsl(265 75% 95%);
+    --cat-2-fg: hsl(265 60% 48%);
+    --cat-3-bg: hsl(300 70% 95%);
+    --cat-3-fg: hsl(300 55% 44%);
+    --cat-4-bg: hsl(28 90% 93%);
+    --cat-4-fg: hsl(28 80% 38%);
+    --cat-5-bg: hsl(45 90% 90%);
+    --cat-5-fg: hsl(38 75% 34%);
+    --cat-6-bg: hsl(185 65% 92%);
+    --cat-6-fg: hsl(185 60% 30%);
+    --cat-7-bg: hsl(199 80% 93%);
+    --cat-7-fg: hsl(199 70% 38%);
 }
 
 * {
   border-color: var(--border);
 }
 
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-feature-settings: "tnum" 1, "ss01" 1;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 ::-webkit-scrollbar {
@@ -71,6 +147,17 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: var(--border-strong);
   border-radius: 8px;
+}
+
+input,
+select,
+textarea {
+  color: var(--foreground);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted-2);
 }

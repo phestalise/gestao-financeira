@@ -9,7 +9,7 @@ import {
   type ChatAction,
 } from "@/lib/ai/schema";
 
-const MODEL = "gemini-3.8-flash";
+const MODEL = "gemini-flash-lite-latest";
 
 function getClient(): GoogleGenAI {
   const apiKey = process.env.GEMINI_API_KEY;

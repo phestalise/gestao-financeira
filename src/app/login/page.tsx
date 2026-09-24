@@ -35,21 +35,32 @@ function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
-      <div className="mb-6 text-center">
-        <p className="text-2xl">💰</p>
-        <h1 className="mt-2 text-xl font-semibold">Meu Dinheiro</h1>
-        <p className="text-sm text-[var(--muted)]">Digite sua senha para continuar</p>
+      <div className="mb-8 text-center">
+        <span
+          className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl text-2xl"
+          style={{ background: "var(--nav-accent-soft)" }}
+        >
+          💰
+        </span>
+        <h1 className="text-xl font-semibold text-white">Meu Dinheiro</h1>
+        <p className="mt-1 text-sm text-[var(--nav-fg)]">Digite sua senha para continuar</p>
       </div>
       <input
         type="password"
         autoFocus
         value={passcode}
         onChange={(e) => setPasscode(e.target.value)}
-        className="w-full rounded-xl border border-[var(--border)] px-4 py-3 text-center text-lg outline-none focus:border-[var(--primary)]"
+        className="w-full rounded-xl border px-4 py-3 text-center text-lg text-white outline-none transition-shadow placeholder:text-[var(--nav-fg)] focus:ring-2 focus:ring-[var(--primary-strong)]/40"
+        style={{ background: "rgba(255,255,255,0.04)", borderColor: "var(--nav-border)" }}
         placeholder="Senha"
       />
-      {error && <p className="text-center text-sm text-[var(--negative)]">{error}</p>}
-      <Button type="submit" disabled={loading || !passcode} className="w-full">
+      {error && <p className="text-center text-sm text-[#ff8a8a]">{error}</p>}
+      <Button
+        type="submit"
+        disabled={loading || !passcode}
+        className="w-full"
+        style={{ background: "var(--nav-accent)" }}
+      >
         {loading ? "Entrando..." : "Entrar"}
       </Button>
     </form>
@@ -58,7 +69,10 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--background)] px-4">
+    <div
+      className="flex min-h-screen items-center justify-center px-4"
+      style={{ background: "var(--nav-bg)" }}
+    >
       <Suspense>
         <LoginForm />
       </Suspense>

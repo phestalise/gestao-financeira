@@ -41,7 +41,7 @@ export function ProfileForm({ profile }: { profile: UserProfile }) {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-xl border border-[var(--border)] px-3 py-2.5 outline-none focus:border-[var(--primary)]"
+            className="w-full rounded-xl border border-[var(--border)] px-3 py-2.5 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-strong)]/35 transition-shadow"
             placeholder="Como quer ser chamado no app"
           />
         </div>
@@ -52,7 +52,7 @@ export function ProfileForm({ profile }: { profile: UserProfile }) {
             step="0.01"
             value={income}
             onChange={(e) => setIncome(e.target.value)}
-            className="w-full rounded-xl border border-[var(--border)] px-3 py-2.5 outline-none focus:border-[var(--primary)]"
+            className="w-full rounded-xl border border-[var(--border)] px-3 py-2.5 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-strong)]/35 transition-shadow"
             placeholder="0,00"
           />
         </div>
@@ -62,7 +62,7 @@ export function ProfileForm({ profile }: { profile: UserProfile }) {
             type="number"
             value={savingsGoalPercent}
             onChange={(e) => setSavingsGoalPercent(e.target.value)}
-            className="w-full rounded-xl border border-[var(--border)] px-3 py-2.5 outline-none focus:border-[var(--primary)]"
+            className="w-full rounded-xl border border-[var(--border)] px-3 py-2.5 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-strong)]/35 transition-shadow"
           />
         </div>
         <Button type="submit" disabled={saving} className="w-full">

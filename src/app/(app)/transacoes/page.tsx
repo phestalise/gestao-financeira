@@ -16,8 +16,8 @@ export default async function TransacoesPage({ searchParams }: Props) {
   });
 
   return (
-    <div className="mx-auto max-w-5xl px-4 pt-6 sm:px-8 sm:pt-10">
-      <h1 className="mb-4 text-xl font-semibold">Movimentações</h1>
+    <div className="mx-auto max-w-5xl px-4 pb-8 pt-[max(env(safe-area-inset-top),1.5rem)] sm:px-8 sm:pt-10">
+      <h1 className="mb-4 text-xl font-semibold tracking-tight">Movimentações</h1>
       <TransactionsExplorer initialTransactions={transactions} />
     </div>
   );

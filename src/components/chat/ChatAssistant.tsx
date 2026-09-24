@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Send, Loader2 } from "lucide-react";
 import { AddTransactionSheet } from "@/components/transactions/AddTransactionSheet";
-import { CategoryIcon } from "@/components/ui/CategoryIcon";
+import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { getCategoryById } from "@/constants/categories";
 import { formatCurrency } from "@/lib/utils/currency";
 import { AIParsedTransaction } from "@/types";
@@ -114,6 +114,9 @@ export function ChatAssistant() {
 
   return (
     <div className="flex h-[calc(100vh-7.5rem)] flex-col sm:h-[calc(100vh-4rem)]">
+      <div className="border-b border-[var(--border)] px-4 pb-3 pt-[max(env(safe-area-inset-top),1.25rem)] sm:px-8 sm:pt-6">
+        <h1 className="text-lg font-semibold">Assistente financeiro</h1>
+      </div>
       <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 pb-4 pt-4 sm:px-8">
         {messages.map((m) => (
           <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
@@ -121,7 +124,7 @@ export function ChatAssistant() {
               className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-line ${
                 m.role === "user"
                   ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
-                  : "bg-[var(--surface-muted)] text-[var(--foreground)]"
+                  : "bg-[var(--surface-2)] text-[var(--foreground)]"
               }`}
             >
               {m.content}
@@ -137,7 +140,7 @@ export function ChatAssistant() {
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-2.5">
+            <div className="rounded-2xl bg-[var(--surface-2)] px-4 py-2.5">
               <Loader2 className="h-4 w-4 animate-spin text-[var(--muted)]" />
             </div>
           </div>
@@ -150,7 +153,7 @@ export function ChatAssistant() {
             <button
               key={s}
               onClick={() => sendMessage(s)}
-              className="rounded-full border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--muted)] hover:bg-[var(--surface-muted)]"
+              className="rounded-full border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--muted)] hover:bg-[var(--surface-2)]"
             >
               {s}
             </button>
@@ -201,11 +204,11 @@ function PreviewCard({
   const category = getCategoryById(preview.categoryId);
   return (
     <div className="mt-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-[var(--foreground)]">
-      <div className="mb-2 flex items-center gap-2">
-        <CategoryIcon icon={category?.icon ?? "circle"} className="h-4 w-4" />
+      <div className="mb-2 flex items-center gap-2.5">
+        <CategoryBadge categoryId={preview.categoryId} icon={category?.icon ?? "more-horizontal"} size="sm" />
         <span className="text-sm font-medium">{category?.name ?? preview.categoryId}</span>
       </div>
-      <p className="text-lg font-semibold">{formatCurrency(preview.amount)}</p>
+      <p className="text-lg font-semibold tabular-nums">{formatCurrency(preview.amount)}</p>
       <div className="mt-3 flex gap-2">
         <button
           onClick={onConfirm}
