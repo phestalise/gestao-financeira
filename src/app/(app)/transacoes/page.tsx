@@ -33,15 +33,23 @@ export default async function TransacoesPage({ searchParams }: Props) {
   const hasFilter = Boolean(month || category);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 pb-8 pt-[max(env(safe-area-inset-top),1.5rem)] sm:px-8 sm:pt-10">
-      <div className="mb-4 flex items-baseline justify-between gap-3">
-        <h1 className="text-3xl font-semibold tracking-tight">
-          Seus <span className="brand-serif brand-gradient pr-1">lançamentos</span>
-          {month && <span className="text-xl font-normal text-[var(--muted)]"> · {monthLabel(month)}</span>}
-        </h1>
+    <div className="mx-auto max-w-4xl px-4 pb-8 pt-[max(env(safe-area-inset-top),1.5rem)] sm:px-8 sm:pt-10">
+      <div className="mb-6 flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-3xl font-semibold tracking-tight">
+            Seus <span className="brand-serif brand-gradient pr-1">lançamentos</span>
+          </h1>
+          <p className="mt-1 text-sm capitalize-first text-[var(--muted)]">
+            {month ? monthLabel(month) : "Tudo o que entrou e saiu"} · {transactions.length}{" "}
+            {transactions.length === 1 ? "lançamento" : "lançamentos"}
+          </p>
+        </div>
         {hasFilter && (
-          <Link href="/transacoes" className="shrink-0 text-sm font-medium text-[var(--primary-strong)]">
-            Ver todas
+          <Link
+            href="/transacoes"
+            className="shrink-0 rounded-xl border border-[var(--border)] px-3 py-2 text-sm font-medium text-[var(--accent-text)] hover:bg-[var(--surface-2)]"
+          >
+            Ver todos
           </Link>
         )}
       </div>

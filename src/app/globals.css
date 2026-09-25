@@ -139,6 +139,10 @@ body {
   font-feature-settings: "tnum" 1, "ss01" 1;
 }
 
+.capitalize-first::first-letter {
+  text-transform: uppercase;
+}
+
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
@@ -215,6 +219,39 @@ textarea::placeholder {
   background: #2ee596;
   filter: blur(90px);
   opacity: 0.25;
+}
+
+.app-input {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  padding: 0.65rem 0.85rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.app-input:focus {
+  border-color: color-mix(in srgb, var(--primary-strong) 55%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+/* campo com prefixo/sufixo (R$, %) dentro da borda */
+.app-affix {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.app-affix:focus-within {
+  border-color: color-mix(in srgb, var(--primary-strong) 55%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+.app-affix input {
+  min-width: 0;
+  flex: 1;
+  background: transparent;
+  padding: 0.65rem 0;
+  outline: none;
 }
 
 .app-nav-glass {
