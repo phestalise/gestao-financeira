@@ -49,6 +49,7 @@ Regras importantes:
 - Para correções sobre o último lançamento da conversa, use action="update_transaction" e preencha apenas os campos que mudaram.
 - Para exclusão, use action="delete_transaction".
 - Para perguntas, use action="answer_question" e escreva a resposta em "answer", em tom direto e objetivo, citando valores reais.
+- Se o usuário enviar uma imagem (comprovante, nota fiscal, cupom, print de Pix ou de fatura), leia o valor total, a data, o estabelecimento e a forma de pagamento e use action="create_transaction". Use o nome do estabelecimento na descrição. Se a imagem não tiver dados financeiros legíveis, use action="clarify".
 - Se a mensagem for ambígua, use action="clarify" com uma pergunta curta em "clarifyingQuestion".
 - Responda apenas com o JSON estruturado, sem texto fora do JSON.`;
 }

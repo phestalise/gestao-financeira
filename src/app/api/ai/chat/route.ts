@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { chatWithFinancialContext } from "@/lib/ai/gemini";
+import { chatWithFinancialContext, type ChatImage } from "@/lib/ai/gemini";
 import { buildFinancialContext } from "@/lib/services/financialContext";
 import { updateTransaction, deleteTransaction, getTransaction } from "@/lib/firebase/transactions";
 import { getCategoryById } from "@/constants/categories";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDateLabel } from "@/lib/utils/date";
 
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+// O corpo de uma função na Vercel é limitado a ~4,5 MB; o cliente já reduz a imagem antes de enviar.
+const MAX_IMAGE_BASE64_LENGTH = 4_000_000;
+
 interface ChatRequestBody {
   message: string;
+  image?: ChatImage | null;
   history?: { role: "user" | "assistant"; content: string }[];
   lastTransactionId?: string | null;
 }
@@ -15,7 +20,17 @@ interface ChatRequestBody {
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => null)) as ChatRequestBody | null;
 
-  if (!body || typeof body.message !== "string" || !body.message.trim()) {
+  const image = body?.image ?? null;
+  if (
+    image &&
+    (typeof image.data !== "string" ||
+      !ALLOWED_IMAGE_TYPES.includes(image.mimeType) ||
+      image.data.length > MAX_IMAGE_BASE64_LENGTH)
+  ) {
+    return NextResponse.json({ error: "Imagem inválida ou grande demais." }, { status: 400 });
+  }
+
+  if (!body || typeof body.message !== "string" || (!body.message.trim() && !image)) {
     return NextResponse.json({ error: "Mensagem vazia." }, { status: 400 });
   }
 
@@ -25,6 +40,7 @@ export async function POST(req: NextRequest) {
   try {
     result = await chatWithFinancialContext({
       message: body.message,
+      image,
       history: body.history ?? [],
       financialContext,
     });

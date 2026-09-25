@@ -64,14 +64,21 @@ export async function parseTransactionMessage(message: string): Promise<ParsedTr
   return parsedTransactionSchema.parse(parsed);
 }
 
+export interface ChatImage {
+  data: string; // base64 sem o prefixo "data:"
+  mimeType: string;
+}
+
 interface ChatContext {
   message: string;
+  image?: ChatImage | null;
   history: { role: "user" | "assistant"; content: string }[];
   financialContext: Record<string, unknown>;
 }
 
 export async function chatWithFinancialContext({
   message,
+  image,
   history,
   financialContext,
 }: ChatContext): Promise<ChatAction> {
@@ -85,7 +92,13 @@ export async function chatWithFinancialContext({
           role: h.role === "assistant" ? "model" : "user",
           parts: [{ text: h.content }],
         })),
-        { role: "user", parts: [{ text: message }] },
+        {
+          role: "user",
+          parts: [
+            { text: message || "Registre a movimentação desta imagem." },
+            ...(image ? [{ inlineData: { data: image.data, mimeType: image.mimeType } }] : []),
+          ],
+        },
       ],
       config: {
         systemInstruction: chatSystemPrompt(JSON.stringify(financialContext)),
