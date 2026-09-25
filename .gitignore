@@ -50,3 +50,6 @@ next-env.d.ts
 
 # documentos pessoais (faturas, extratos)
 *.pdf
+
+# faturas e extratos: ficam só na sua máquina
+/faturas/

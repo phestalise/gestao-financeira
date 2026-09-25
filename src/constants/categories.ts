@@ -20,6 +20,7 @@ export const EXPENSE_CATEGORIES: Category[] = [
   { id: "casamento", name: "Casamento", icon: "gem", type: "expense" },
   { id: "pets", name: "Pets", icon: "paw-print", type: "expense" },
   { id: "impostos", name: "Impostos", icon: "landmark", type: "expense" },
+  { id: "juros_taxas", name: "Juros e tarifas", icon: "percent", type: "expense" },
   { id: "outros_gasto", name: "Outros", icon: "more-horizontal", type: "expense" },
 ];
 
