@@ -1,9 +1,32 @@
 import Link from "next/link";
-import { ArrowDownLeft, ArrowUpRight, PiggyBank, PieChart, Receipt } from "lucide-react";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  PiggyBank,
+  PieChart,
+  Receipt,
+  ChevronLeft,
+  ChevronRight,
+  CalendarDays,
+} from "lucide-react";
 import { listTransactions } from "@/lib/firebase/transactions";
 import { getProfile } from "@/lib/firebase/profile";
-import { buildSummary, buildCategoryBreakdown, biggestExpense } from "@/lib/services/dashboard";
-import { currentMonthRange, currentMonthLabel, formatDateLabel } from "@/lib/utils/date";
+import { ensureRecurringForMonth } from "@/lib/firebase/recurring";
+import {
+  buildSummary,
+  buildCategoryBreakdown,
+  biggestExpense,
+  buildMonthlyHistory,
+} from "@/lib/services/dashboard";
+import {
+  currentMonthKey,
+  formatDateLabel,
+  isMonthKey,
+  monthKeyOf,
+  monthLabel,
+  shiftMonth,
+  shortMonthLabel,
+} from "@/lib/utils/date";
 import { formatCurrency } from "@/lib/utils/currency";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -19,12 +42,32 @@ const STATUS_LABEL = {
   over: { emoji: "🔴", text: "Acima do orçamento", tone: "negative" as const },
 };
 
-export default async function DashboardPage() {
-  const { from, to } = currentMonthRange();
-  const [transactions, profile] = await Promise.all([
-    listTransactions({ from, to }),
-    getProfile(),
-  ]);
+const HISTORY_MONTHS = 6;
+
+interface Props {
+  searchParams: Promise<{ mes?: string }>;
+}
+
+export default async function DashboardPage({ searchParams }: Props) {
+  const { mes } = await searchParams;
+  const thisMonth = currentMonthKey();
+  const month = isMonthKey(mes) && mes <= thisMonth ? mes : thisMonth;
+
+  await ensureRecurringForMonth(thisMonth);
+  if (month !== thisMonth) await ensureRecurringForMonth(month);
+
+  const [allTransactions, profile] = await Promise.all([listTransactions(), getProfile()]);
+  const transactions = allTransactions.filter((t) => monthKeyOf(t.date) === month);
+
+  const oldestMonth = allTransactions.length
+    ? monthKeyOf(allTransactions[allTransactions.length - 1].date)
+    : thisMonth;
+  const historyMonths = Array.from({ length: HISTORY_MONTHS }, (_, i) => shiftMonth(thisMonth, -i)).filter(
+    (m) => m >= oldestMonth
+  );
+  const history = buildMonthlyHistory(allTransactions, profile, historyMonths);
+  const previousMonth = shiftMonth(month, -1);
+  const nextMonth = month < thisMonth ? shiftMonth(month, 1) : null;
 
   const summary = buildSummary(transactions, profile);
   const breakdown = buildCategoryBreakdown(transactions).slice(0, 5);
@@ -34,6 +77,30 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-8 pt-[max(env(safe-area-inset-top),1.25rem)] sm:px-8 sm:pt-8">
+      <div className="mb-4 flex items-center justify-between">
+        <Link
+          href={`/?mes=${previousMonth}`}
+          aria-label="Mês anterior"
+          className="rounded-full p-2 hover:bg-[var(--surface-2)]"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Link>
+        <h1 className="text-base font-semibold capitalize tracking-tight">{monthLabel(month)}</h1>
+        {nextMonth ? (
+          <Link
+            href={nextMonth === thisMonth ? "/" : `/?mes=${nextMonth}`}
+            aria-label="Próximo mês"
+            className="rounded-full p-2 hover:bg-[var(--surface-2)]"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </Link>
+        ) : (
+          <span className="p-2 opacity-30">
+            <ChevronRight className="h-5 w-5" />
+          </span>
+        )}
+      </div>
+
       <div className="lg:grid lg:grid-cols-5 lg:items-start lg:gap-6">
         <div className="lg:col-span-3">
           <Card
@@ -51,14 +118,17 @@ export default async function DashboardPage() {
             </div>
             <ProgressBar percent={summary.budgetUsedPercent} className="mt-3" tone="onGradient" />
             <p className="mt-1.5 text-xs text-white/60">
-              {summary.budgetUsedPercent}% da renda utilizada este mês
+              {summary.budgetUsedPercent}% da renda utilizada no mês
+              {summary.incomeFromProfile && " · renda cadastrada − gastos"}
             </p>
           </Card>
 
           <div className="mb-5 grid grid-cols-3 gap-3">
             <Card className="p-4">
               <ArrowDownLeft className="h-4 w-4 text-[var(--positive)]" />
-              <p className="mt-2 text-xs text-[var(--muted)]">Entradas</p>
+              <p className="mt-2 text-xs text-[var(--muted)]">
+                {summary.incomeFromProfile ? "Renda (cadastrada)" : "Entradas"}
+              </p>
               <p className="mt-0.5 text-lg font-semibold tabular-nums">
                 {formatCurrency(summary.income)}
               </p>
@@ -80,7 +150,7 @@ export default async function DashboardPage() {
           <Card className="mb-5 p-5 lg:mb-0">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-[0.95rem] font-semibold tracking-tight">
-                Resumo de {currentMonthLabel()}
+                Resumo do mês
               </h2>
               <span className="text-xs text-[var(--muted)]">{transactions.length} lançamentos</span>
             </div>
@@ -105,6 +175,43 @@ export default async function DashboardPage() {
               </div>
             </div>
           </Card>
+
+          <Card className="mb-5 p-5 lg:mb-0 lg:mt-5">
+            <div className="mb-3 flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-[var(--muted)]" />
+              <h2 className="text-[0.95rem] font-semibold tracking-tight">Histórico mensal</h2>
+            </div>
+            <div className="divide-y divide-[var(--border)]">
+              {history.map((h) => (
+                <Link
+                  key={h.month}
+                  href={h.month === thisMonth ? "/" : `/?mes=${h.month}`}
+                  className={`-mx-2 grid grid-cols-4 items-center gap-2 rounded-lg px-2 py-2.5 text-sm hover:bg-[var(--surface-2)] ${
+                    h.month === month ? "bg-[var(--surface-2)] font-medium" : ""
+                  }`}
+                >
+                  <span className="capitalize">{shortMonthLabel(h.month)}</span>
+                  <span className="text-right tabular-nums text-[var(--muted)]">
+                    {formatCurrency(h.income)}
+                  </span>
+                  <span className="text-right tabular-nums">-{formatCurrency(h.expenses)}</span>
+                  <span
+                    className={`text-right tabular-nums ${
+                      h.balance < 0 ? "text-[var(--negative)]" : "text-[var(--positive)]"
+                    }`}
+                  >
+                    {formatCurrency(h.balance)}
+                  </span>
+                </Link>
+              ))}
+            </div>
+            <p className="mt-2 grid grid-cols-4 gap-2 text-[10px] uppercase tracking-wide text-[var(--muted)]">
+              <span>Mês</span>
+              <span className="text-right">Renda</span>
+              <span className="text-right">Gastos</span>
+              <span className="text-right">Saldo</span>
+            </p>
+          </Card>
         </div>
 
         <div className="lg:col-span-2">
@@ -115,7 +222,7 @@ export default async function DashboardPage() {
             {breakdown.length === 0 ? (
               <EmptyState
                 icon={PieChart}
-                title="Nenhum gasto este mês"
+                title="Nenhum gasto neste mês"
                 description="Assim que você registrar um gasto, ele aparece aqui distribuído por categoria."
               />
             ) : (
@@ -123,7 +230,7 @@ export default async function DashboardPage() {
                 {breakdown.map((item) => (
                   <Link
                     key={item.categoryId}
-                    href={`/transacoes?categoria=${item.categoryId}`}
+                    href={`/transacoes?categoria=${item.categoryId}&mes=${month}`}
                     className="block"
                   >
                     <div className="mb-1.5 flex items-center justify-between text-sm">
@@ -143,7 +250,7 @@ export default async function DashboardPage() {
           <Card className="p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-[0.95rem] font-semibold tracking-tight">Últimos lançamentos</h2>
-              <Link href="/transacoes" className="text-sm font-medium text-[var(--primary-strong)]">
+              <Link href={`/transacoes?mes=${month}`} className="text-sm font-medium text-[var(--primary-strong)]">
                 Ver tudo
               </Link>
             </div>

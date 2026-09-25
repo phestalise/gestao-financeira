@@ -1,4 +1,4 @@
-import { format, parseISO, startOfMonth, endOfMonth, subDays } from "date-fns";
+import { format, parseISO, startOfMonth, endOfMonth, subDays, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export function toISODate(date: Date): string {
@@ -30,4 +30,36 @@ export function formatDateLabel(isoDate: string): string {
 
 export function currentMonthLabel(): string {
   return format(new Date(), "MMMM", { locale: ptBR });
+}
+
+// Meses são identificados por uma chave "yyyy-MM" (ex: "2026-09"), usada na URL e nos gastos fixos.
+export type MonthKey = string;
+
+export function isMonthKey(value: unknown): value is MonthKey {
+  return typeof value === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
+}
+
+export function currentMonthKey(): MonthKey {
+  return format(new Date(), "yyyy-MM");
+}
+
+export function monthKeyOf(isoDate: string): MonthKey {
+  return isoDate.slice(0, 7);
+}
+
+export function shiftMonth(key: MonthKey, amount: number): MonthKey {
+  return format(addMonths(parseISO(`${key}-01`), amount), "yyyy-MM");
+}
+
+export function monthRange(key: MonthKey): { from: string; to: string } {
+  const first = parseISO(`${key}-01`);
+  return { from: toISODate(first), to: toISODate(endOfMonth(first)) };
+}
+
+export function monthLabel(key: MonthKey): string {
+  return format(parseISO(`${key}-01`), "MMMM 'de' yyyy", { locale: ptBR });
+}
+
+export function shortMonthLabel(key: MonthKey): string {
+  return format(parseISO(`${key}-01`), "MMM/yy", { locale: ptBR });
 }

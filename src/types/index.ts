@@ -59,6 +59,9 @@ export interface RecurringExpense {
   dayOfMonth: number;
   paymentMethod: PaymentMethod | null;
   active: boolean;
+  startMonth: string; // yyyy-MM: primeiro mês em que o gasto entra
+  generatedMonths: string[]; // meses (yyyy-MM) em que o lançamento já foi criado
+  createdAt: string;
 }
 
 export interface UserProfile {
@@ -70,6 +73,7 @@ export interface UserProfile {
 
 export interface DashboardSummary {
   income: number;
+  incomeFromProfile: boolean;
   expenses: number;
   balance: number;
   savings: number;

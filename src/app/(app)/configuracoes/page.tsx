@@ -1,12 +1,14 @@
 import { getProfile } from "@/lib/firebase/profile";
+import { listRecurring } from "@/lib/firebase/recurring";
 import { ProfileForm } from "@/components/settings/ProfileForm";
+import { RecurringExpensesForm } from "@/components/settings/RecurringExpensesForm";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Card } from "@/components/ui/Card";
 
 export const dynamic = "force-dynamic";
 
 export default async function ConfiguracoesPage() {
-  const profile = await getProfile();
+  const [profile, recurring] = await Promise.all([getProfile(), listRecurring()]);
 
   return (
     <div className="mx-auto max-w-xl px-4 pb-8 pt-[max(env(safe-area-inset-top),1.5rem)] sm:px-8 sm:pt-10">
@@ -22,6 +24,7 @@ export default async function ConfiguracoesPage() {
       </Card>
 
       <ProfileForm profile={profile} />
+      <RecurringExpensesForm recurring={recurring} />
     </div>
   );
 }
