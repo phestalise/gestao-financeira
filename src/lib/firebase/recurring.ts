@@ -1,7 +1,7 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { getDb, OWNER_ID } from "@/lib/firebase/admin";
 import { RecurringExpense } from "@/types";
-import { currentMonthKey, type MonthKey } from "@/lib/utils/date";
+import { currentMonthKey, shiftMonth, type MonthKey } from "@/lib/utils/date";
 
 function userDoc() {
   return getDb().collection("users").doc(OWNER_ID);
@@ -44,10 +44,11 @@ function dateInMonth(month: MonthKey, dayOfMonth: number): string {
   return `${month}-${String(Math.min(dayOfMonth, lastDay)).padStart(2, "0")}`;
 }
 
-// Cria, uma única vez por mês, o lançamento de cada gasto fixo ativo. Meses futuros não são gerados.
+// Cria, uma única vez por mês, o lançamento de cada gasto fixo ativo. Vai até o próximo mês, para dar
+// para planejá-lo; meses mais distantes não são gerados.
 // O mês fica marcado em generatedMonths, então apagar ou editar o lançamento não faz ele voltar.
 export async function ensureRecurringForMonth(month: MonthKey): Promise<void> {
-  if (month > currentMonthKey()) return;
+  if (month > shiftMonth(currentMonthKey(), 1)) return;
 
   const pending = (await listRecurring()).filter(
     (r) => r.active && r.startMonth <= month && !r.generatedMonths.includes(month)

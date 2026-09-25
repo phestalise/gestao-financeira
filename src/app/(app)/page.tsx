@@ -53,7 +53,10 @@ interface Props {
 export default async function DashboardPage({ searchParams }: Props) {
   const { mes } = await searchParams;
   const thisMonth = currentMonthKey();
-  const month = isMonthKey(mes) && mes <= thisMonth ? mes : thisMonth;
+  // O próximo mês fica liberado para planejamento.
+  const lastMonth = shiftMonth(thisMonth, 1);
+  const month = isMonthKey(mes) && mes <= lastMonth ? mes : thisMonth;
+  const isPlanning = month > thisMonth;
 
   await ensureRecurringForMonth(thisMonth);
   if (month !== thisMonth) await ensureRecurringForMonth(month);
@@ -69,12 +72,17 @@ export default async function DashboardPage({ searchParams }: Props) {
     (oldest, m) => (m < oldest ? m : oldest),
     thisMonth
   );
-  const historyMonths = Array.from({ length: HISTORY_MONTHS }, (_, i) => shiftMonth(thisMonth, -i)).filter(
-    (m) => m >= oldestMonth
-  );
+  const plannedMonths = new Set([
+    ...allTransactions.map(transactionMonth).filter((m) => m > thisMonth),
+    ...Object.keys(openingBalances).filter((m) => m > thisMonth),
+  ]);
+  const historyMonths = [
+    ...[...plannedMonths].sort().reverse(),
+    ...Array.from({ length: HISTORY_MONTHS }, (_, i) => shiftMonth(thisMonth, -i)).filter((m) => m >= oldestMonth),
+  ];
   const history = buildMonthlyHistory(allTransactions, profile, historyMonths, openingBalances);
   const previousMonth = shiftMonth(month, -1);
-  const nextMonth = month < thisMonth ? shiftMonth(month, 1) : null;
+  const nextMonth = month < lastMonth ? shiftMonth(month, 1) : null;
 
   const summary = buildSummary(transactions, profile, openingBalances[month] ?? 0);
   const breakdown = buildCategoryBreakdown(transactions).slice(0, 5);
@@ -92,7 +100,10 @@ export default async function DashboardPage({ searchParams }: Props) {
         >
           <ChevronLeft className="h-5 w-5" />
         </Link>
-        <h1 className="text-base font-semibold capitalize tracking-tight">{monthLabel(month)}</h1>
+        <div className="text-center">
+          <h1 className="text-base font-semibold capitalize tracking-tight">{monthLabel(month)}</h1>
+          {isPlanning && <p className="text-xs text-[var(--muted)]">Planejamento</p>}
+        </div>
         {nextMonth ? (
           <Link
             href={nextMonth === thisMonth ? "/" : `/?mes=${nextMonth}`}
