@@ -1,4 +1,4 @@
-import { getDb, OWNER_ID } from "@/lib/firebase/admin";
+import { currentUserDoc } from "@/lib/firebase/admin";
 import { UserProfile } from "@/types";
 
 const DEFAULT_PROFILE: UserProfile = {
@@ -7,17 +7,13 @@ const DEFAULT_PROFILE: UserProfile = {
   onboardingComplete: false,
 };
 
-function docRef() {
-  return getDb().collection("users").doc(OWNER_ID);
-}
-
 export async function getProfile(): Promise<UserProfile> {
-  const doc = await docRef().get();
+  const doc = await (await currentUserDoc()).get();
   if (!doc.exists) return DEFAULT_PROFILE;
   return { ...DEFAULT_PROFILE, ...doc.data() } as UserProfile;
 }
 
 export async function saveProfile(data: Partial<UserProfile>): Promise<UserProfile> {
-  await docRef().set(data, { merge: true });
+  await (await currentUserDoc()).set(data, { merge: true });
   return getProfile();
 }

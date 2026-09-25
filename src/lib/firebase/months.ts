@@ -1,14 +1,14 @@
-import { getDb, OWNER_ID } from "@/lib/firebase/admin";
+import { currentUserDoc } from "@/lib/firebase/admin";
 import type { MonthKey } from "@/lib/utils/date";
 
 // Dados que pertencem ao mês como um todo, guardados em users/{id}/months/{yyyy-MM}.
-function collection() {
-  return getDb().collection("users").doc(OWNER_ID).collection("months");
+async function collection() {
+  return (await currentUserDoc()).collection("months");
 }
 
 // Valor que já estava na conta no início de cada mês, indexado por yyyy-MM.
 export async function listOpeningBalances(): Promise<Record<MonthKey, number>> {
-  const snapshot = await collection().get();
+  const snapshot = await (await collection()).get();
   const balances: Record<MonthKey, number> = {};
   for (const doc of snapshot.docs) {
     const value = doc.data().openingBalance;
@@ -18,5 +18,5 @@ export async function listOpeningBalances(): Promise<Record<MonthKey, number>> {
 }
 
 export async function setOpeningBalance(month: MonthKey, openingBalance: number): Promise<void> {
-  await collection().doc(month).set({ openingBalance, updatedAt: new Date().toISOString() }, { merge: true });
+  await (await collection()).doc(month).set({ openingBalance, updatedAt: new Date().toISOString() }, { merge: true });
 }

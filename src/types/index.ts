@@ -69,6 +69,7 @@ export interface RecurringExpense {
 
 export interface UserProfile {
   name?: string;
+  email?: string;
   income: number;
   savingsGoalPercent?: number;
   onboardingComplete: boolean;

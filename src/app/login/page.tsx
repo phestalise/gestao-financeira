@@ -1,13 +1,16 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/Button";
+import { ArrowRight, Loader2 } from "lucide-react";
+import { AuthField, AuthShell } from "@/components/auth/AuthShell";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [passcode, setPasscode] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -19,63 +22,57 @@ function LoginForm() {
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ passcode }),
+      body: JSON.stringify({ email, password }),
     });
 
-    setLoading(false);
-
     if (!res.ok) {
-      setError("Senha incorreta.");
+      setLoading(false);
+      setError((await res.json().catch(() => null))?.error ?? "Não foi possível entrar.");
       return;
     }
 
-    router.replace(searchParams.get("next") || "/");
+    const next = searchParams.get("next");
+    // só aceita caminhos internos, para o parâmetro não virar redirecionamento para outro site
+    router.replace(next?.startsWith("/") && !next.startsWith("//") ? next : "/painel");
     router.refresh();
   }
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
-      <div className="mb-8 text-center">
-        <span
-          className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl text-2xl"
-          style={{ background: "var(--nav-accent-soft)" }}
-        >
-          💰
-        </span>
-        <h1 className="text-xl font-semibold text-white">Meu Dinheiro</h1>
-        <p className="mt-1 text-sm text-[var(--nav-fg)]">Digite sua senha para continuar</p>
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="mb-8">
+        <h1 className="text-4xl font-semibold tracking-tight">
+          Que bom te ver <span className="lp-serif lp-gradient-text">de novo.</span>
+        </h1>
+        <p className="mt-2" style={{ color: "var(--lp-dim)" }}>
+          Entre para continuar a sua história.
+        </p>
       </div>
-      <input
-        type="password"
-        autoFocus
-        value={passcode}
-        onChange={(e) => setPasscode(e.target.value)}
-        className="w-full rounded-xl border px-4 py-3 text-center text-lg text-white outline-none transition-shadow placeholder:text-[var(--nav-fg)] focus:ring-2 focus:ring-[var(--primary-strong)]/40"
-        style={{ background: "rgba(255,255,255,0.04)", borderColor: "var(--nav-border)" }}
-        placeholder="Senha"
-      />
-      {error && <p className="text-center text-sm text-[#ff8a8a]">{error}</p>}
-      <Button
-        type="submit"
-        disabled={loading || !passcode}
-        className="w-full"
-        style={{ background: "var(--nav-accent)" }}
-      >
-        {loading ? "Entrando..." : "Entrar"}
-      </Button>
+      <AuthField label="E-mail" type="email" autoComplete="email" autoFocus required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" />
+      <AuthField label="Senha" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+      {error && (
+        <p className="lp-pop rounded-xl px-3 py-2.5 text-sm" style={{ background: "rgba(255,107,130,0.12)", color: "var(--lp-red)" }}>
+          {error}
+        </p>
+      )}
+      <button type="submit" disabled={loading} className="lp-cta flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-semibold text-white disabled:opacity-60">
+        {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>Entrar <ArrowRight className="h-4 w-4" /></>}
+      </button>
+      <p className="text-center text-sm" style={{ color: "var(--lp-dim)" }}>
+        Ainda não tem conta?{" "}
+        <Link href="/cadastro" className="font-medium" style={{ color: "var(--lp-sky)" }}>
+          Criar agora
+        </Link>
+      </p>
     </form>
   );
 }
 
 export default function LoginPage() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center px-4"
-      style={{ background: "var(--nav-bg)" }}
-    >
+    <AuthShell>
       <Suspense>
         <LoginForm />
       </Suspense>
-    </div>
+    </AuthShell>
   );
 }

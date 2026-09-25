@@ -7,7 +7,7 @@ import { LayoutDashboard, MessageCircle, List, Settings, Plus } from "lucide-rea
 import { AddTransactionSheet } from "@/components/transactions/AddTransactionSheet";
 
 const NAV_ITEMS = [
-  { href: "/", label: "Início", icon: LayoutDashboard },
+  { href: "/painel", label: "Início", icon: LayoutDashboard },
   { href: "/assistente", label: "IA", icon: MessageCircle },
   { href: "/transacoes", label: "Lançamentos", icon: List },
   { href: "/configuracoes", label: "Ajustes", icon: Settings },
@@ -23,15 +23,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         className="hidden w-60 shrink-0 flex-col p-4 sm:flex"
         style={{ background: "var(--nav-bg)" }}
       >
-        <div className="mb-8 flex items-center gap-2 px-2 text-lg font-semibold text-white">
+        <Link href="/" className="mb-8 flex items-center gap-2 px-2 text-lg font-semibold text-white">
           <span
             className="flex h-8 w-8 items-center justify-center rounded-lg text-base"
             style={{ background: "var(--nav-accent-soft)" }}
           >
             💰
           </span>
-          Meu Dinheiro
-        </div>
+          <span>
+            Meu <span className="brand-serif text-[1.15em] text-[#8ed2f5]">Dinheiro</span>
+          </span>
+        </Link>
         <nav className="flex flex-1 flex-col gap-1">
           {NAV_ITEMS.map((item) => {
             const active = pathname === item.href;

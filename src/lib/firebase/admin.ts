@@ -1,3 +1,4 @@
+import { getCurrentUserId } from "@/lib/auth/current-user";
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 
@@ -29,6 +30,10 @@ export function getDb(): Firestore {
   return getFirestore(getAdminApp());
 }
 
-// Espaço fixo de dados (sem autenticação na Fase 1).
-// Quando o login for adicionado, troque por o uid real do usuário autenticado.
-export const OWNER_ID = "default-user";
+// Espaço de dados de antes do cadastro por e-mail; a conta de OWNER_EMAIL continua usando ele.
+export const LEGACY_OWNER_ID = "default-user";
+
+// Documento users/{uid} de quem está logado: raiz de tudo que é dessa pessoa.
+export async function currentUserDoc() {
+  return getDb().collection("users").doc(await getCurrentUserId());
+}

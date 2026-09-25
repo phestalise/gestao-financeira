@@ -1,22 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getExpectedSessionToken, verifyPasscode, SESSION_COOKIE } from "@/lib/auth/session";
+import { z } from "zod";
+import { authenticate } from "@/lib/firebase/accounts";
+import { createSessionToken, sessionCookieOptions, SESSION_COOKIE } from "@/lib/auth/session";
+
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => null);
-  const passcode = body?.passcode;
-
-  if (typeof passcode !== "string" || !verifyPasscode(passcode)) {
-    return NextResponse.json({ error: "Senha incorreta." }, { status: 401 });
+  const parsed = loginSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Informe e-mail e senha." }, { status: 400 });
   }
 
-  const token = await getExpectedSessionToken();
-  const res = NextResponse.json({ ok: true });
-  res.cookies.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 180,
-  });
+  const account = await authenticate(parsed.data.email, parsed.data.password);
+  if (!account) {
+    return NextResponse.json({ error: "E-mail ou senha incorretos." }, { status: 401 });
+  }
+
+  const res = NextResponse.json({ ok: true, name: account.name });
+  res.cookies.set(SESSION_COOKIE, await createSessionToken(account.uid), sessionCookieOptions);
   return res;
 }

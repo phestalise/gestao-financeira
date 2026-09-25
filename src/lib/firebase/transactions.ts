@@ -1,8 +1,8 @@
-import { getDb, OWNER_ID } from "@/lib/firebase/admin";
+import { currentUserDoc } from "@/lib/firebase/admin";
 import { Transaction } from "@/types";
 
-function collection() {
-  return getDb().collection("users").doc(OWNER_ID).collection("transactions");
+async function collection() {
+  return (await currentUserDoc()).collection("transactions");
 }
 
 export interface TransactionFilters {
@@ -13,7 +13,7 @@ export interface TransactionFilters {
 }
 
 export async function listTransactions(filters: TransactionFilters = {}): Promise<Transaction[]> {
-  let query: FirebaseFirestore.Query = collection();
+  let query: FirebaseFirestore.Query = await collection();
 
   if (filters.from) query = query.where("date", ">=", filters.from);
   if (filters.to) query = query.where("date", "<=", filters.to);
@@ -31,7 +31,7 @@ export async function listTransactions(filters: TransactionFilters = {}): Promis
 }
 
 export async function getTransaction(id: string): Promise<Transaction | null> {
-  const doc = await collection().doc(id).get();
+  const doc = await (await collection()).doc(id).get();
   if (!doc.exists) return null;
   return { id: doc.id, ...doc.data() } as Transaction;
 }
@@ -40,7 +40,7 @@ export async function createTransaction(
   data: Omit<Transaction, "id" | "createdAt" | "updatedAt">
 ): Promise<Transaction> {
   const now = new Date().toISOString();
-  const docRef = await collection().add({ ...data, createdAt: now, updatedAt: now });
+  const docRef = await (await collection()).add({ ...data, createdAt: now, updatedAt: now });
   const doc = await docRef.get();
   return { id: doc.id, ...doc.data() } as Transaction;
 }
@@ -49,7 +49,7 @@ export async function updateTransaction(
   id: string,
   data: Partial<Omit<Transaction, "id" | "createdAt">>
 ): Promise<Transaction | null> {
-  const ref = collection().doc(id);
+  const ref = (await collection()).doc(id);
   const existing = await ref.get();
   if (!existing.exists) return null;
 
@@ -59,7 +59,7 @@ export async function updateTransaction(
 }
 
 export async function deleteTransaction(id: string): Promise<boolean> {
-  const ref = collection().doc(id);
+  const ref = (await collection()).doc(id);
   const existing = await ref.get();
   if (!existing.exists) return false;
   await ref.delete();
@@ -67,7 +67,7 @@ export async function deleteTransaction(id: string): Promise<boolean> {
 }
 
 export async function getLastTransaction(): Promise<Transaction | null> {
-  const snapshot = await collection().orderBy("createdAt", "desc").limit(1).get();
+  const snapshot = await (await collection()).orderBy("createdAt", "desc").limit(1).get();
   if (snapshot.empty) return null;
   const doc = snapshot.docs[0];
   return { id: doc.id, ...doc.data() } as Transaction;

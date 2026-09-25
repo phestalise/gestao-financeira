@@ -91,7 +91,7 @@ export default async function DashboardPage({ searchParams }: Props) {
     <div className="mx-auto max-w-6xl px-4 pb-8 pt-[max(env(safe-area-inset-top),1.25rem)] sm:px-8 sm:pt-8">
       <div className="mb-4 flex items-center justify-between">
         <Link
-          href={`/?mes=${previousMonth}`}
+          href={`/painel?mes=${previousMonth}`}
           aria-label="Mês anterior"
           className="rounded-full p-2 hover:bg-[var(--surface-2)]"
         >
@@ -103,7 +103,7 @@ export default async function DashboardPage({ searchParams }: Props) {
         </div>
         {nextMonth ? (
           <Link
-            href={`/?mes=${nextMonth}`}
+            href={`/painel?mes=${nextMonth}`}
             aria-label="Próximo mês"
             className="rounded-full p-2 hover:bg-[var(--surface-2)]"
           >
@@ -207,7 +207,7 @@ export default async function DashboardPage({ searchParams }: Props) {
               {history.map((h) => (
                 <Link
                   key={h.month}
-                  href={`/?mes=${h.month}`}
+                  href={`/painel?mes=${h.month}`}
                   className={`-mx-2 grid grid-cols-4 items-center gap-2 rounded-lg px-2 py-2.5 text-sm hover:bg-[var(--surface-2)] ${
                     h.month === month ? "bg-[var(--surface-2)] font-medium" : ""
                   }`}

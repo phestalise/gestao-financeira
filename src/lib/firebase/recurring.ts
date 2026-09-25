@@ -1,25 +1,21 @@
 import { FieldValue } from "firebase-admin/firestore";
-import { getDb, OWNER_ID } from "@/lib/firebase/admin";
+import { currentUserDoc, getDb } from "@/lib/firebase/admin";
 import { RecurringExpense } from "@/types";
 import { currentMonthKey, shiftMonth, type MonthKey } from "@/lib/utils/date";
 
-function userDoc() {
-  return getDb().collection("users").doc(OWNER_ID);
-}
-
-function collection() {
-  return userDoc().collection("recurring");
+async function collection() {
+  return (await currentUserDoc()).collection("recurring");
 }
 
 export async function listRecurring(): Promise<RecurringExpense[]> {
-  const snapshot = await collection().orderBy("createdAt", "asc").get();
+  const snapshot = await (await collection()).orderBy("createdAt", "asc").get();
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as RecurringExpense);
 }
 
 export async function createRecurring(
   data: Omit<RecurringExpense, "id" | "active" | "generatedMonths" | "createdAt">
 ): Promise<RecurringExpense> {
-  const ref = await collection().add({
+  const ref = await (await collection()).add({
     ...data,
     active: true,
     generatedMonths: [],
@@ -31,7 +27,7 @@ export async function createRecurring(
 
 // Desativa o gasto fixo para os próximos meses; os lançamentos já gerados continuam no histórico.
 export async function deactivateRecurring(id: string): Promise<boolean> {
-  const ref = collection().doc(id);
+  const ref = (await collection()).doc(id);
   const doc = await ref.get();
   if (!doc.exists) return false;
   await ref.update({ active: false });
@@ -56,12 +52,13 @@ export async function ensureRecurringForMonth(month: MonthKey): Promise<void> {
   if (pending.length === 0) return;
 
   const db = getDb();
-  const transactions = userDoc().collection("transactions");
+  const recurring = await collection();
+  const transactions = (await currentUserDoc()).collection("transactions");
 
   await Promise.all(
     pending.map((r) =>
       db.runTransaction(async (tx) => {
-        const ref = collection().doc(r.id);
+        const ref = recurring.doc(r.id);
         const fresh = await tx.get(ref);
         if ((fresh.data()?.generatedMonths as string[] | undefined)?.includes(month)) return;
 

@@ -2,18 +2,45 @@ import { getProfile } from "@/lib/firebase/profile";
 import { listRecurring } from "@/lib/firebase/recurring";
 import { ProfileForm } from "@/components/settings/ProfileForm";
 import { RecurringExpensesForm } from "@/components/settings/RecurringExpensesForm";
+import { InviteCard } from "@/components/settings/InviteCard";
+import { LogoutButton } from "@/components/settings/LogoutButton";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Card } from "@/components/ui/Card";
 
 export const dynamic = "force-dynamic";
 
-export default async function ConfiguracoesPage() {
-  const [profile, recurring] = await Promise.all([getProfile(), listRecurring()]);
+interface Props {
+  searchParams: Promise<{ bemvindo?: string }>;
+}
+
+export default async function ConfiguracoesPage({ searchParams }: Props) {
+  const [{ bemvindo }, profile, recurring] = await Promise.all([searchParams, getProfile(), listRecurring()]);
 
   return (
     <div className="mx-auto max-w-xl px-4 pb-8 pt-[max(env(safe-area-inset-top),1.5rem)] sm:px-8 sm:pt-10">
-      <h1 className="mb-1 text-xl font-semibold tracking-tight">Configurações</h1>
-      <p className="mb-6 text-sm text-[var(--muted)]">Ajuste sua renda e metas para deixar os cálculos mais precisos.</p>
+      {bemvindo ? (
+        <div className="mb-6 rounded-2xl p-5 text-white" style={{ background: "var(--hero-gradient)" }}>
+          <p className="text-2xl">👋</p>
+          <h1 className="mt-2 text-xl font-semibold tracking-tight">
+            Bem-vindo{profile.name ? `, ${profile.name.split(" ")[0]}` : ""}! Sua história começa aqui.
+          </h1>
+          <p className="mt-1 text-sm text-white/75">
+            Informe sua renda mensal abaixo para o app calcular quanto sobra. Depois é só lançar os gastos, do seu jeito.
+          </p>
+        </div>
+      ) : (
+        <>
+          <h1 className="mb-1 text-xl font-semibold tracking-tight">Configurações</h1>
+          <p className="mb-6 text-sm text-[var(--muted)]">Ajuste sua renda e metas para deixar os cálculos mais precisos.</p>
+        </>
+      )}
+
+      <ProfileForm profile={profile} />
+      <RecurringExpensesForm recurring={recurring} />
+
+      <div className="mt-4">
+        <InviteCard name={profile.name} />
+      </div>
 
       <Card className="mb-4 flex items-center justify-between p-5">
         <div>
@@ -23,8 +50,13 @@ export default async function ConfiguracoesPage() {
         <ThemeToggle />
       </Card>
 
-      <ProfileForm profile={profile} />
-      <RecurringExpensesForm recurring={recurring} />
+      <Card className="flex items-center justify-between p-5">
+        <div className="min-w-0">
+          <p className="text-sm font-medium">Sua conta</p>
+          <p className="truncate text-xs text-[var(--muted)]">{profile.email ?? "Conectado"}</p>
+        </div>
+        <LogoutButton />
+      </Card>
     </div>
   );
 }

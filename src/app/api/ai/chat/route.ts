@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { chatWithFinancialContext, type ChatImage } from "@/lib/ai/gemini";
 import { buildFinancialContext } from "@/lib/services/financialContext";
 import { updateTransaction, deleteTransaction, getTransaction } from "@/lib/firebase/transactions";
-import { getCategoryById } from "@/constants/categories";
 import { formatCurrency } from "@/lib/utils/currency";
-import { formatDateLabel } from "@/lib/utils/date";
 
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
 // O corpo de uma função na Vercel é limitado a ~4,5 MB; o cliente já reduz a imagem antes de enviar.
@@ -61,10 +59,10 @@ export async function POST(req: NextRequest) {
           reply: result.clarifyingQuestion ?? "Não entendi bem o valor ou a categoria. Pode detalhar?",
         });
       }
-      const category = getCategoryById(t.categoryId);
+      // O cartão de confirmação mostra categoria, valor e data; o texto só apresenta o cartão.
       return NextResponse.json({
         action: "create_transaction",
-        reply: `${category?.name ?? t.categoryId}\n${formatCurrency(t.amount)}\n${formatDateLabel(t.date ?? "")}\n\nPosso registrar?`,
+        reply: t.type === "income" ? "Opa, dinheiro entrando! 💸 Entendi assim:" : "Entendi assim. Confere e registra:",
         preview: t,
       });
     }

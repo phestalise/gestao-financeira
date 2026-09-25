@@ -9,8 +9,8 @@ const keys = [
   "FIREBASE_CLIENT_EMAIL",
   "FIREBASE_PRIVATE_KEY",
   "GEMINI_API_KEY",
-  "APP_PASSCODE",
   "APP_SECRET",
+  "OWNER_EMAIL",
 ];
 
 for (const k of keys) {

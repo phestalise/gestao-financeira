@@ -17,13 +17,13 @@ Abra o arquivo e copie para o `.env.local`:
 ```bash
 npm run dev
 ```
-Abra http://localhost:3000 → vai pedir a senha (`APP_PASSCODE` do `.env.local`).
+Abra http://localhost:3000 → home pública. Crie sua conta em **Criar conta** usando o e-mail de `OWNER_EMAIL` para herdar os dados que já existiam. Cada pessoa que se cadastrar tem um espaço próprio e privado.
 
 ## 4. Deploy grátis (Vercel)
 ```bash
 npx vercel
 ```
-Login com GitHub, sem cartão. Depois, no painel do projeto na Vercel → **Settings → Environment Variables**, cole as mesmas 6 variáveis do `.env.local`. Redeploy.
+Login com GitHub, sem cartão. Depois, no painel do projeto na Vercel → **Settings → Environment Variables**, cole as mesmas variáveis do `.env.local`. Redeploy.
 
 ## Custos
 Tudo dentro do free tier permanente enquanto for uso pessoal:
