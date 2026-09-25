@@ -55,31 +55,28 @@ export default async function DashboardPage({ searchParams }: Props) {
   const thisMonth = currentMonthKey();
   // O próximo mês fica liberado para planejamento.
   const lastMonth = shiftMonth(thisMonth, 1);
-  const month = isMonthKey(mes) && mes <= lastMonth ? mes : thisMonth;
-  const isPlanning = month > thisMonth;
 
   await ensureRecurringForMonth(thisMonth);
-  if (month !== thisMonth) await ensureRecurringForMonth(month);
+  await ensureRecurringForMonth(lastMonth);
+  if (isMonthKey(mes) && mes < thisMonth) await ensureRecurringForMonth(mes);
 
   const [allTransactions, profile, openingBalances] = await Promise.all([
     listTransactions(),
     getProfile(),
     listOpeningBalances(),
   ]);
+  const monthsWithData = new Set([...allTransactions.map(transactionMonth), ...Object.keys(openingBalances)]);
+
+  // Sem mês na URL, abre o mês atual; se ele estiver vazio e o próximo já tiver planejamento, abre o próximo.
+  const defaultMonth = !monthsWithData.has(thisMonth) && monthsWithData.has(lastMonth) ? lastMonth : thisMonth;
+  const month = isMonthKey(mes) && mes <= lastMonth ? mes : defaultMonth;
+  const isPlanning = month > thisMonth;
   const transactions = allTransactions.filter((t) => transactionMonth(t) === month);
 
-  const oldestMonth = [...allTransactions.map(transactionMonth), ...Object.keys(openingBalances)].reduce(
-    (oldest, m) => (m < oldest ? m : oldest),
-    thisMonth
+  // O histórico lista só meses com algum lançamento ou valor na conta.
+  const historyMonths = Array.from({ length: HISTORY_MONTHS + 1 }, (_, i) => shiftMonth(lastMonth, -i)).filter(
+    (m) => monthsWithData.has(m)
   );
-  const plannedMonths = new Set([
-    ...allTransactions.map(transactionMonth).filter((m) => m > thisMonth),
-    ...Object.keys(openingBalances).filter((m) => m > thisMonth),
-  ]);
-  const historyMonths = [
-    ...[...plannedMonths].sort().reverse(),
-    ...Array.from({ length: HISTORY_MONTHS }, (_, i) => shiftMonth(thisMonth, -i)).filter((m) => m >= oldestMonth),
-  ];
   const history = buildMonthlyHistory(allTransactions, profile, historyMonths, openingBalances);
   const previousMonth = shiftMonth(month, -1);
   const nextMonth = month < lastMonth ? shiftMonth(month, 1) : null;
@@ -106,7 +103,7 @@ export default async function DashboardPage({ searchParams }: Props) {
         </div>
         {nextMonth ? (
           <Link
-            href={nextMonth === thisMonth ? "/" : `/?mes=${nextMonth}`}
+            href={`/?mes=${nextMonth}`}
             aria-label="Próximo mês"
             className="rounded-full p-2 hover:bg-[var(--surface-2)]"
           >
@@ -204,10 +201,13 @@ export default async function DashboardPage({ searchParams }: Props) {
               <h2 className="text-[0.95rem] font-semibold tracking-tight">Histórico mensal</h2>
             </div>
             <div className="divide-y divide-[var(--border)]">
+              {history.length === 0 && (
+                <p className="py-2.5 text-sm text-[var(--muted)]">Nenhum mês com lançamentos ainda.</p>
+              )}
               {history.map((h) => (
                 <Link
                   key={h.month}
-                  href={h.month === thisMonth ? "/" : `/?mes=${h.month}`}
+                  href={`/?mes=${h.month}`}
                   className={`-mx-2 grid grid-cols-4 items-center gap-2 rounded-lg px-2 py-2.5 text-sm hover:bg-[var(--surface-2)] ${
                     h.month === month ? "bg-[var(--surface-2)] font-medium" : ""
                   }`}
