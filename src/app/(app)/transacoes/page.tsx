@@ -1,7 +1,7 @@
 import { listTransactions } from "@/lib/firebase/transactions";
 import { TransactionsExplorer } from "@/components/transactions/TransactionsExplorer";
 import { ensureRecurringForMonth } from "@/lib/firebase/recurring";
-import { currentMonthKey, isMonthKey, monthLabel, monthRange } from "@/lib/utils/date";
+import { currentMonthKey, isMonthKey, monthLabel, transactionMonth } from "@/lib/utils/date";
 import { getCategoryById } from "@/constants/categories";
 import { formatCurrency } from "@/lib/utils/currency";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
@@ -20,11 +20,13 @@ export default async function TransacoesPage({ searchParams }: Props) {
 
   await ensureRecurringForMonth(month ?? currentMonthKey());
 
-  const transactions = await listTransactions({
-    ...(month ? monthRange(month) : {}),
-    categoryId: categoria,
-    type: tipo === "income" || tipo === "expense" ? tipo : undefined,
-  });
+  // O mês é filtrado pelo mês de referência (mês da fatura), que pode diferir da data da compra.
+  const transactions = (
+    await listTransactions({
+      categoryId: categoria,
+      type: tipo === "income" || tipo === "expense" ? tipo : undefined,
+    })
+  ).filter((t) => !month || transactionMonth(t) === month);
 
   const category = categoria ? getCategoryById(categoria) : undefined;
   const total = transactions.reduce((sum, t) => sum + (t.type === "income" ? t.amount : -t.amount), 0);

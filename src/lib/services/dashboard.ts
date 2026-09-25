@@ -1,6 +1,6 @@
 import { Transaction, DashboardSummary, UserProfile } from "@/types";
 import { getCategoryById } from "@/constants/categories";
-import { monthKeyOf, type MonthKey } from "@/lib/utils/date";
+import { transactionMonth, type MonthKey } from "@/lib/utils/date";
 
 export interface CategoryBreakdownItem {
   categoryId: string;
@@ -10,7 +10,12 @@ export interface CategoryBreakdownItem {
   percentOfExpenses: number;
 }
 
-export function buildSummary(transactions: Transaction[], profile: UserProfile): DashboardSummary {
+// openingBalance é o dinheiro que já estava na conta no início do mês.
+export function buildSummary(
+  transactions: Transaction[],
+  profile: UserProfile,
+  openingBalance = 0
+): DashboardSummary {
   const registeredIncome = transactions
     .filter((t) => t.type === "income")
     .reduce((sum, t) => sum + t.amount, 0);
@@ -18,13 +23,13 @@ export function buildSummary(transactions: Transaction[], profile: UserProfile):
     .filter((t) => t.type === "expense")
     .reduce((sum, t) => sum + t.amount, 0);
 
-  // Sem entradas lançadas no mês, a renda mensal cadastrada no perfil vale como a renda do mês:
-  // saldo disponível = renda − gastos.
+  // Sem entradas lançadas no mês, a renda mensal cadastrada no perfil vale como a renda do mês.
+  // Saldo do mês = renda + valor na conta − gastos.
   const incomeFromProfile = registeredIncome === 0 && profile.income > 0;
   const income = incomeFromProfile ? profile.income : registeredIncome;
 
-  const balance = income - expenses;
-  const savings = balance > 0 ? balance : 0;
+  const balance = income + openingBalance - expenses;
+  const savings = Math.max(income - expenses, 0);
 
   const budgetUsedPercent = income > 0 ? Math.round((expenses / income) * 100) : 0;
 
@@ -32,7 +37,7 @@ export function buildSummary(transactions: Transaction[], profile: UserProfile):
   if (budgetUsedPercent >= 100) status = "over";
   else if (budgetUsedPercent >= 80) status = "warning";
 
-  return { income, incomeFromProfile, expenses, balance, savings, budgetUsedPercent, status };
+  return { income, incomeFromProfile, openingBalance, expenses, balance, savings, budgetUsedPercent, status };
 }
 
 export function buildCategoryBreakdown(transactions: Transaction[]): CategoryBreakdownItem[] {
@@ -68,6 +73,7 @@ export interface MonthHistoryItem {
   month: MonthKey;
   income: number;
   incomeFromProfile: boolean;
+  openingBalance: number;
   expenses: number;
   balance: number;
 }
@@ -76,17 +82,20 @@ export interface MonthHistoryItem {
 export function buildMonthlyHistory(
   transactions: Transaction[],
   profile: UserProfile,
-  months: MonthKey[]
+  months: MonthKey[],
+  openingBalances: Record<MonthKey, number> = {}
 ): MonthHistoryItem[] {
   return months.map((month) => {
     const summary = buildSummary(
-      transactions.filter((t) => monthKeyOf(t.date) === month),
-      profile
+      transactions.filter((t) => transactionMonth(t) === month),
+      profile,
+      openingBalances[month] ?? 0
     );
     return {
       month,
       income: summary.income,
       incomeFromProfile: summary.incomeFromProfile,
+      openingBalance: summary.openingBalance,
       expenses: summary.expenses,
       balance: summary.balance,
     };

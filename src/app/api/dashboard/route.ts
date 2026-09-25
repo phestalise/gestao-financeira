@@ -2,16 +2,19 @@ import { NextResponse } from "next/server";
 import { listTransactions } from "@/lib/firebase/transactions";
 import { getProfile } from "@/lib/firebase/profile";
 import { buildSummary, buildCategoryBreakdown, biggestExpense } from "@/lib/services/dashboard";
-import { currentMonthRange } from "@/lib/utils/date";
+import { listOpeningBalances } from "@/lib/firebase/months";
+import { currentMonthKey, transactionMonth } from "@/lib/utils/date";
 
 export async function GET() {
-  const { from, to } = currentMonthRange();
-  const [transactions, profile] = await Promise.all([
-    listTransactions({ from, to }),
+  const month = currentMonthKey();
+  const [allTransactions, profile, openingBalances] = await Promise.all([
+    listTransactions(),
     getProfile(),
+    listOpeningBalances(),
   ]);
+  const transactions = allTransactions.filter((t) => transactionMonth(t) === month);
 
-  const summary = buildSummary(transactions, profile);
+  const summary = buildSummary(transactions, profile, openingBalances[month] ?? 0);
   const categoryBreakdown = buildCategoryBreakdown(transactions);
   const biggest = biggestExpense(transactions);
 

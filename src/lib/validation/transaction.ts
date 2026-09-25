@@ -13,6 +13,10 @@ export const transactionInputSchema = z.object({
     .enum(["dinheiro", "pix", "debito", "credito", "boleto", "transferencia", "outro"])
     .nullable(),
   note: z.string().max(500).optional(),
+  referenceMonth: z
+    .string()
+    .regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Mês inválido.")
+    .optional(),
 });
 
 export type TransactionInput = z.infer<typeof transactionInputSchema>;

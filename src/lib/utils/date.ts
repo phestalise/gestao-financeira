@@ -47,6 +47,11 @@ export function monthKeyOf(isoDate: string): MonthKey {
   return isoDate.slice(0, 7);
 }
 
+// Mês em que um lançamento conta no orçamento: o mês da fatura, quando houver, senão o mês da data.
+export function transactionMonth(t: { date: string; referenceMonth?: string }): MonthKey {
+  return t.referenceMonth ?? monthKeyOf(t.date);
+}
+
 export function shiftMonth(key: MonthKey, amount: number): MonthKey {
   return format(addMonths(parseISO(`${key}-01`), amount), "yyyy-MM");
 }

@@ -32,6 +32,9 @@ export interface Transaction {
     groupId: string;
   };
   recurringId?: string;
+  // Mês (yyyy-MM) em que o gasto pesa no orçamento. Compras no cartão usam o mês em que a fatura é paga;
+  // sem esse campo, vale o mês da data.
+  referenceMonth?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -74,6 +77,7 @@ export interface UserProfile {
 export interface DashboardSummary {
   income: number;
   incomeFromProfile: boolean;
+  openingBalance: number;
   expenses: number;
   balance: number;
   savings: number;

@@ -2,47 +2,42 @@ import { listTransactions } from "@/lib/firebase/transactions";
 import { getProfile } from "@/lib/firebase/profile";
 import { buildSummary, buildCategoryBreakdown, biggestExpense, buildMonthlyHistory } from "@/lib/services/dashboard";
 import { ensureRecurringForMonth, listRecurring } from "@/lib/firebase/recurring";
-import { currentMonthKey, shiftMonth, toISODate } from "@/lib/utils/date";
-import { subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { listOpeningBalances } from "@/lib/firebase/months";
+import { currentMonthKey, shiftMonth, toISODate, transactionMonth } from "@/lib/utils/date";
 
 export async function buildFinancialContext() {
   const now = new Date();
-  const previousMonth = subMonths(now, 1);
+  const currentMonth = currentMonthKey();
+  const previousMonth = shiftMonth(currentMonth, -1);
 
-  const currentRange = { from: toISODate(startOfMonth(now)), to: toISODate(endOfMonth(now)) };
-  const previousRange = {
-    from: toISODate(startOfMonth(previousMonth)),
-    to: toISODate(endOfMonth(previousMonth)),
-  };
+  await ensureRecurringForMonth(currentMonth);
 
-  await ensureRecurringForMonth(currentMonthKey());
-
-  const [allTransactions, profile, recurring] = await Promise.all([
+  const [allTransactions, profile, recurring, openingBalances] = await Promise.all([
     listTransactions(),
     getProfile(),
     listRecurring(),
+    listOpeningBalances(),
   ]);
-  const inRange = (range: { from: string; to: string }) =>
-    allTransactions.filter((t) => t.date >= range.from && t.date <= range.to);
-  const currentTransactions = inRange(currentRange);
-  const previousTransactions = inRange(previousRange);
-  const lastMonths = Array.from({ length: 6 }, (_, i) => shiftMonth(currentMonthKey(), -i));
+  const inMonth = (month: string) => allTransactions.filter((t) => transactionMonth(t) === month);
+  const currentTransactions = inMonth(currentMonth);
+  const previousTransactions = inMonth(previousMonth);
+  const lastMonths = Array.from({ length: 6 }, (_, i) => shiftMonth(currentMonth, -i));
 
-  const currentSummary = buildSummary(currentTransactions, profile);
-  const previousSummary = buildSummary(previousTransactions, profile);
+  const currentSummary = buildSummary(currentTransactions, profile, openingBalances[currentMonth] ?? 0);
+  const previousSummary = buildSummary(previousTransactions, profile, openingBalances[previousMonth] ?? 0);
 
   return {
     hoje: toISODate(now),
     rendaMensalCadastrada: profile.income,
     metaEconomiaPercent: profile.savingsGoalPercent ?? null,
     observacaoSaldo:
-      "Quando não há entradas lançadas no mês, a renda do mês é a renda mensal cadastrada e o saldo é renda − gastos.",
+      "Resultado do mês = renda + valor na conta no início do mês − despesas. Sem entradas lançadas, a renda do mês é a renda mensal cadastrada. Compras no cartão contam no mês em que a fatura é paga (mesReferencia), não na data da compra.",
     gastosFixosMensais: recurring
       .filter((r) => r.active)
       .map((r) => ({ descricao: r.description, valor: r.amount, categoria: r.categoryId, dia: r.dayOfMonth })),
-    historicoMensal: buildMonthlyHistory(allTransactions, profile, lastMonths),
+    historicoMensal: buildMonthlyHistory(allTransactions, profile, lastMonths, openingBalances),
     mesAtual: {
-      periodo: currentRange,
+      mes: currentMonth,
       resumo: currentSummary,
       gastosPorCategoria: buildCategoryBreakdown(currentTransactions),
       maiorGasto: biggestExpense(currentTransactions),
@@ -54,11 +49,12 @@ export async function buildFinancialContext() {
         categoria: t.categoryId,
         descricao: t.description,
         data: t.date,
+        mesReferencia: transactionMonth(t),
         formaPagamento: t.paymentMethod,
       })),
     },
     mesAnterior: {
-      periodo: previousRange,
+      mes: previousMonth,
       resumo: previousSummary,
       gastosPorCategoria: buildCategoryBreakdown(previousTransactions),
     },

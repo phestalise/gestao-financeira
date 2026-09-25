@@ -12,6 +12,8 @@ import {
 import { listTransactions } from "@/lib/firebase/transactions";
 import { getProfile } from "@/lib/firebase/profile";
 import { ensureRecurringForMonth } from "@/lib/firebase/recurring";
+import { listOpeningBalances } from "@/lib/firebase/months";
+import { OpeningBalanceEditor } from "@/components/dashboard/OpeningBalanceEditor";
 import {
   buildSummary,
   buildCategoryBreakdown,
@@ -22,10 +24,10 @@ import {
   currentMonthKey,
   formatDateLabel,
   isMonthKey,
-  monthKeyOf,
   monthLabel,
   shiftMonth,
   shortMonthLabel,
+  transactionMonth,
 } from "@/lib/utils/date";
 import { formatCurrency } from "@/lib/utils/currency";
 import { Card } from "@/components/ui/Card";
@@ -56,20 +58,25 @@ export default async function DashboardPage({ searchParams }: Props) {
   await ensureRecurringForMonth(thisMonth);
   if (month !== thisMonth) await ensureRecurringForMonth(month);
 
-  const [allTransactions, profile] = await Promise.all([listTransactions(), getProfile()]);
-  const transactions = allTransactions.filter((t) => monthKeyOf(t.date) === month);
+  const [allTransactions, profile, openingBalances] = await Promise.all([
+    listTransactions(),
+    getProfile(),
+    listOpeningBalances(),
+  ]);
+  const transactions = allTransactions.filter((t) => transactionMonth(t) === month);
 
-  const oldestMonth = allTransactions.length
-    ? monthKeyOf(allTransactions[allTransactions.length - 1].date)
-    : thisMonth;
+  const oldestMonth = [...allTransactions.map(transactionMonth), ...Object.keys(openingBalances)].reduce(
+    (oldest, m) => (m < oldest ? m : oldest),
+    thisMonth
+  );
   const historyMonths = Array.from({ length: HISTORY_MONTHS }, (_, i) => shiftMonth(thisMonth, -i)).filter(
     (m) => m >= oldestMonth
   );
-  const history = buildMonthlyHistory(allTransactions, profile, historyMonths);
+  const history = buildMonthlyHistory(allTransactions, profile, historyMonths, openingBalances);
   const previousMonth = shiftMonth(month, -1);
   const nextMonth = month < thisMonth ? shiftMonth(month, 1) : null;
 
-  const summary = buildSummary(transactions, profile);
+  const summary = buildSummary(transactions, profile, openingBalances[month] ?? 0);
   const breakdown = buildCategoryBreakdown(transactions).slice(0, 5);
   const biggest = biggestExpense(transactions);
   const recent = transactions.slice(0, 5);
@@ -108,10 +115,15 @@ export default async function DashboardPage({ searchParams }: Props) {
             className="mb-5 overflow-hidden p-6 text-white"
             style={{ background: "var(--hero-gradient)" }}
           >
-            <p className="text-sm text-white/70">Saldo disponível</p>
+            <p className="text-sm text-white/70">Resultado do mês</p>
             <p className="mt-1 text-[2.5rem] font-semibold leading-none tracking-tight tabular-nums">
               {formatCurrency(summary.balance)}
             </p>
+            <p className="mt-2 text-xs text-white/60">
+              {formatCurrency(summary.income)} de renda + {formatCurrency(summary.openingBalance)} na conta −{" "}
+              {formatCurrency(summary.expenses)} de despesas
+            </p>
+            <OpeningBalanceEditor month={month} value={summary.openingBalance} />
             <div className="mt-4 flex items-center gap-2 text-sm">
               <span>{status.emoji}</span>
               <span className="text-white/80">{status.text}</span>
@@ -119,7 +131,6 @@ export default async function DashboardPage({ searchParams }: Props) {
             <ProgressBar percent={summary.budgetUsedPercent} className="mt-3" tone="onGradient" />
             <p className="mt-1.5 text-xs text-white/60">
               {summary.budgetUsedPercent}% da renda utilizada no mês
-              {summary.incomeFromProfile && " · renda cadastrada − gastos"}
             </p>
           </Card>
 
@@ -192,7 +203,7 @@ export default async function DashboardPage({ searchParams }: Props) {
                 >
                   <span className="capitalize">{shortMonthLabel(h.month)}</span>
                   <span className="text-right tabular-nums text-[var(--muted)]">
-                    {formatCurrency(h.income)}
+                    {formatCurrency(h.income + h.openingBalance)}
                   </span>
                   <span className="text-right tabular-nums">-{formatCurrency(h.expenses)}</span>
                   <span
@@ -207,9 +218,9 @@ export default async function DashboardPage({ searchParams }: Props) {
             </div>
             <p className="mt-2 grid grid-cols-4 gap-2 text-[10px] uppercase tracking-wide text-[var(--muted)]">
               <span>Mês</span>
-              <span className="text-right">Renda</span>
-              <span className="text-right">Gastos</span>
-              <span className="text-right">Saldo</span>
+              <span className="text-right">Renda + conta</span>
+              <span className="text-right">Despesas</span>
+              <span className="text-right">Resultado</span>
             </p>
           </Card>
         </div>
