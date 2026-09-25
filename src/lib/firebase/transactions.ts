@@ -17,11 +17,17 @@ export async function listTransactions(filters: TransactionFilters = {}): Promis
 
   if (filters.from) query = query.where("date", ">=", filters.from);
   if (filters.to) query = query.where("date", "<=", filters.to);
-  if (filters.categoryId) query = query.where("categoryId", "==", filters.categoryId);
-  if (filters.type) query = query.where("type", "==", filters.type);
 
   const snapshot = await query.orderBy("date", "desc").get();
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Transaction);
+  // Categoria e tipo são filtrados em memória: combinados com o filtro/ordenação por data, o Firestore
+  // exigiria um índice composto para cada combinação. O volume de um app pessoal cabe tranquilo aqui.
+  return snapshot.docs
+    .map((doc) => ({ id: doc.id, ...doc.data() }) as Transaction)
+    .filter(
+      (t) =>
+        (!filters.categoryId || t.categoryId === filters.categoryId) &&
+        (!filters.type || t.type === filters.type)
+    );
 }
 
 export async function getTransaction(id: string): Promise<Transaction | null> {
