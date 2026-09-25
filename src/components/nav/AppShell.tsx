@@ -19,14 +19,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
+      {/* Fica presa à tela: em páginas longas o menu e o "Adicionar" continuam à mão. */}
       <aside
-        className="hidden w-60 shrink-0 flex-col p-4 sm:flex"
-        style={{ background: "var(--nav-bg)" }}
+        className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r p-4 sm:flex"
+        style={{ background: "var(--nav-bg)", borderColor: "var(--nav-border)" }}
       >
-        <Link href="/" className="mb-8 flex items-center gap-2 px-2 text-lg font-semibold text-white">
+        <Link href="/" className="mb-8 flex items-center gap-2 px-2 pt-1 text-lg font-semibold text-white">
           <span
             className="flex h-8 w-8 items-center justify-center rounded-lg text-base"
-            style={{ background: "var(--nav-accent-soft)" }}
+            style={{ background: "rgba(47,111,214,0.25)" }}
           >
             💰
           </span>
@@ -41,9 +42,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors"
+                className="relative flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors hover:text-[var(--nav-fg-hover)]"
                 style={{
                   background: active ? "var(--nav-accent-soft)" : "transparent",
+                  borderColor: active ? "rgba(142,210,245,0.22)" : "transparent",
                   color: active ? "#ffffff" : "var(--nav-fg)",
                 }}
               >
@@ -55,20 +57,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
         <button
           onClick={() => setAddOpen(true)}
-          className="mt-4 flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
-          style={{ background: "var(--nav-accent)" }}
+          className="app-cta mt-4 flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold"
         >
           <Plus className="h-4 w-4" />
           Adicionar
         </button>
       </aside>
 
-      <div className="flex min-h-screen flex-1 flex-col">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
         <main className="flex-1 pb-24 sm:pb-8">{children}</main>
 
         <nav
-          className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-around px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 sm:hidden"
-          style={{ background: "var(--nav-bg)", borderTop: "1px solid var(--nav-border)" }}
+          className="app-nav-glass fixed inset-x-0 bottom-0 z-40 flex items-center justify-around px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 sm:hidden"
+          style={{ borderTop: "1px solid var(--nav-border)" }}
         >
           {NAV_ITEMS.slice(0, 2).map((item) => (
             <NavButton key={item.href} item={item} active={pathname === item.href} />
@@ -77,8 +78,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => setAddOpen(true)}
             aria-label="Adicionar movimentação"
-            className="-mt-6 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg"
-            style={{ background: "var(--nav-accent)" }}
+            className="app-cta -mt-6 flex h-14 w-14 items-center justify-center rounded-full"
           >
             <Plus className="h-6 w-6" />
           </button>

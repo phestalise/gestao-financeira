@@ -19,7 +19,7 @@ export default async function ConfiguracoesPage({ searchParams }: Props) {
   return (
     <div className="mx-auto max-w-xl px-4 pb-8 pt-[max(env(safe-area-inset-top),1.5rem)] sm:px-8 sm:pt-10">
       {bemvindo ? (
-        <div className="mb-6 rounded-2xl p-5 text-white" style={{ background: "var(--hero-gradient)" }}>
+        <div className="app-hero mb-6 overflow-hidden rounded-2xl p-5 text-white">
           <p className="text-2xl">👋</p>
           <h1 className="mt-2 text-xl font-semibold tracking-tight">
             Bem-vindo{profile.name ? `, ${profile.name.split(" ")[0]}` : ""}! Sua história começa aqui.
@@ -30,7 +30,9 @@ export default async function ConfiguracoesPage({ searchParams }: Props) {
         </div>
       ) : (
         <>
-          <h1 className="mb-1 text-xl font-semibold tracking-tight">Configurações</h1>
+          <h1 className="mb-1 text-3xl font-semibold tracking-tight">
+            Seus <span className="brand-serif brand-gradient pr-1">ajustes</span>
+          </h1>
           <p className="mb-6 text-sm text-[var(--muted)]">Ajuste sua renda e metas para deixar os cálculos mais precisos.</p>
         </>
       )}

@@ -98,7 +98,7 @@ export default async function DashboardPage({ searchParams }: Props) {
           <ChevronLeft className="h-5 w-5" />
         </Link>
         <div className="text-center">
-          <h1 className="text-base font-semibold capitalize tracking-tight">{monthLabel(month)}</h1>
+          <h1 className="text-xl font-semibold capitalize tracking-tight">{monthLabel(month)}</h1>
           {isPlanning && <p className="text-xs text-[var(--muted)]">Planejamento</p>}
         </div>
         {nextMonth ? (
@@ -120,8 +120,7 @@ export default async function DashboardPage({ searchParams }: Props) {
         <div className="lg:col-span-3">
           <Card
             bordered={false}
-            className="mb-5 overflow-hidden p-6 text-white"
-            style={{ background: "var(--hero-gradient)" }}
+            className="app-hero mb-5 overflow-hidden p-6 text-white"
           >
             <p className="text-sm text-white/70">Resultado do mês</p>
             <p className="mt-1 text-[2.5rem] font-semibold leading-none tracking-tight tabular-nums">
@@ -142,27 +141,27 @@ export default async function DashboardPage({ searchParams }: Props) {
             </p>
           </Card>
 
-          <div className="mb-5 grid grid-cols-3 gap-3">
-            <Card className="p-4">
+          <div className="mb-5 grid grid-cols-3 gap-2 sm:gap-3">
+            <Card className="min-w-0 p-3 sm:p-4">
               <ArrowDownLeft className="h-4 w-4 text-[var(--positive)]" />
               <p className="mt-2 text-xs text-[var(--muted)]">
                 {summary.incomeFromProfile ? "Renda (cadastrada)" : "Entradas"}
               </p>
-              <p className="mt-0.5 text-lg font-semibold tabular-nums">
+              <p className="mt-0.5 text-[0.95rem] font-semibold tracking-tight tabular-nums sm:text-lg">
                 {formatCurrency(summary.income)}
               </p>
             </Card>
-            <Card className="p-4">
+            <Card className="min-w-0 p-3 sm:p-4">
               <ArrowUpRight className="h-4 w-4 text-[var(--negative)]" />
               <p className="mt-2 text-xs text-[var(--muted)]">Gastos</p>
-              <p className="mt-0.5 text-lg font-semibold tabular-nums">
+              <p className="mt-0.5 text-[0.95rem] font-semibold tracking-tight tabular-nums sm:text-lg">
                 {formatCurrency(summary.expenses)}
               </p>
             </Card>
-            <Card className="p-4">
+            <Card className="min-w-0 p-3 sm:p-4">
               <PiggyBank className="h-4 w-4 text-[var(--primary-strong)]" />
               <p className="mt-2 text-xs text-[var(--muted)]">Economia</p>
-              <p className="mt-0.5 text-lg font-semibold tabular-nums">{formatCurrency(summary.savings)}</p>
+              <p className="mt-0.5 text-[0.95rem] font-semibold tracking-tight tabular-nums sm:text-lg">{formatCurrency(summary.savings)}</p>
             </Card>
           </div>
 

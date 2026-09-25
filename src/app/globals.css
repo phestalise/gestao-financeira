@@ -3,38 +3,39 @@
 /* Escuro é o padrão do app (identidade preto/azul/branco). O claro fica em [data-theme="light"]. */
 :root {
   --background: #000000;
-  --surface: #121317;
-  --surface-2: #1a1c22;
-  --surface-hover: #24272f;
-  --border: #2e323c;
-  --border-strong: #40454f;
-  --foreground: #ffffff;
-  --muted: #9aa1b0;
-  --muted-2: #6d7382;
+  --surface: #0b0f19;
+  --surface-2: #111726;
+  --surface-hover: #182035;
+  --border: rgba(160, 190, 255, 0.12);
+  --border-strong: rgba(160, 190, 255, 0.22);
+  --foreground: #f4f7ff;
+  --muted: #9ea9c0;
+  --muted-2: #6b768d;
 
-  --primary: #0f52ba;
+  --primary: #2f6fd6;
   --primary-strong: #8ed2f5;
   --primary-foreground: #ffffff;
-  --primary-soft: #0f1f42;
+  --primary-soft: #0e1d3d;
   --accent-text: #8ed2f5; /* texto de destaque legível sobre o fundo */
 
   --positive: #2ee596;
   --positive-soft: #0f2a1f;
-  --negative: #ff4d6a;
+  --negative: #ff6b82;
   --negative-soft: #33141b;
-  --warning: #ffb020;
+  --warning: #ffc25c;
   --warning-soft: #302410;
 
   --shadow-color: 220 90% 0%;
-  --hero-gradient: linear-gradient(160deg, #0f52ba 0%, #003868 100%);
+  --hero-gradient: linear-gradient(150deg, #2f6fd6 0%, #0f52ba 45%, #062a5c 100%);
+  --button-gradient: linear-gradient(135deg, #2f6fd6, #0f52ba);
 
   /* navegação: identidade fixa preta/azul, igual em qualquer tema de conteúdo (Azul Safira) */
   --nav-bg: #000000;
-  --nav-border: rgba(255, 255, 255, 0.1);
-  --nav-fg: rgba(255, 255, 255, 0.55);
-  --nav-fg-hover: rgba(255, 255, 255, 0.9);
-  --nav-accent: #2f6fd6;
-  --nav-accent-soft: rgba(47, 111, 214, 0.2);
+  --nav-border: rgba(160, 190, 255, 0.12);
+  --nav-fg: rgba(222, 232, 255, 0.55);
+  --nav-fg-hover: rgba(222, 232, 255, 0.9);
+  --nav-accent: #8ed2f5;
+  --nav-accent-soft: rgba(47, 111, 214, 0.16);
 
   /* paleta categórica (8 tons) — usada para diferenciar categorias visualmente */
   --cat-0-bg: hsl(217 45% 24%);
@@ -91,7 +92,7 @@
     --muted-2: #9096a5;
 
     --primary: #0f52ba;
-    --primary-strong: #8ed2f5;
+    --primary-strong: #0f52ba;
     --primary-foreground: #ffffff;
     --primary-soft: #e7eefb;
     --accent-text: #0f52ba;
@@ -104,7 +105,6 @@
     --warning-soft: #fbf1de;
 
     --shadow-color: 220 30% 60%;
-    --hero-gradient: linear-gradient(160deg, #0f52ba 0%, #003868 100%);
 
     --cat-0-bg: hsl(217 85% 94%);
     --cat-0-fg: hsl(217 75% 42%);
@@ -162,6 +162,65 @@ textarea {
 input::placeholder,
 textarea::placeholder {
   color: var(--muted-2);
+}
+
+/* ---------- superfícies no estilo da home ---------- */
+.app-card {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 24px 60px -32px rgba(0, 0, 0, 0.9);
+}
+:root[data-theme="light"] .app-card {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px -16px hsl(var(--shadow-color) / 0.35);
+}
+
+.app-cta {
+  background: var(--button-gradient);
+  color: #fff;
+  box-shadow: 0 10px 30px -12px rgba(47, 111, 214, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.25s;
+}
+.app-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 40px -12px rgba(47, 111, 214, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+/* cartão de destaque: gradiente safira com a grade e o brilho da home */
+.app-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--hero-gradient);
+  box-shadow: 0 30px 80px -30px rgba(47, 111, 214, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+.app-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(ellipse 70% 90% at 85% 0%, #000 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 90% at 85% 0%, #000 20%, transparent 70%);
+}
+.app-hero::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 320px;
+  height: 320px;
+  right: -120px;
+  bottom: -180px;
+  border-radius: 999px;
+  background: #2ee596;
+  filter: blur(90px);
+  opacity: 0.25;
+}
+
+.app-nav-glass {
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
 }
 
 /* ---------- marca ---------- */

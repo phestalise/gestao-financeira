@@ -8,7 +8,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<Variant, string> = {
-  primary: "bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90",
+  primary: "app-cta",
   secondary:
     "bg-[var(--surface-2)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--border)]",
   ghost: "bg-transparent text-[var(--foreground)] hover:bg-[var(--surface-2)]",

@@ -1,7 +1,7 @@
 /* Home pública. Sempre escura, na identidade preto/azul safira do app. Tudo prefixado com lp- */
 
 .lp {
-  --lp-bg: #03050a;
+  --lp-bg: #000000;
   --lp-ink: #f4f7ff;
   --lp-dim: rgba(222, 232, 255, 0.62);
   --lp-faint: rgba(222, 232, 255, 0.38);

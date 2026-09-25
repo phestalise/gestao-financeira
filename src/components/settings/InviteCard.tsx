@@ -32,7 +32,7 @@ export function InviteCard({ name }: { name?: string }) {
 
   return (
     <Card className="mb-4 overflow-hidden p-0">
-      <div className="p-5" style={{ background: "var(--hero-gradient)" }}>
+      <div className="app-hero p-5">
         <p className="flex items-center gap-2 text-sm font-medium text-white/80">
           <Heart className="h-4 w-4" /> Convide quem você gosta
         </p>
