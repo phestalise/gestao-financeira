@@ -1,5 +1,5 @@
 import { Transaction, DashboardSummary, UserProfile } from "@/types";
-import { getCategoryById, PAYMENT_METHODS } from "@/constants/categories";
+import { getCategoryById, isSeparateExpense, PAYMENT_METHODS } from "@/constants/categories";
 import { transactionMonth, type MonthKey } from "@/lib/utils/date";
 
 export interface CategoryBreakdownItem {
@@ -12,10 +12,12 @@ export interface CategoryBreakdownItem {
 
 // openingBalance é o dinheiro que já estava na conta no início do mês.
 export function buildSummary(
-  transactions: Transaction[],
+  allTransactions: Transaction[],
   profile: UserProfile,
   openingBalance = 0
 ): DashboardSummary {
+  const separateExpenses = allTransactions.filter(isSeparateExpense).reduce((sum, t) => sum + t.amount, 0);
+  const transactions = countedTransactions(allTransactions);
   const registeredIncome = transactions
     .filter((t) => t.type === "income")
     .reduce((sum, t) => sum + t.amount, 0);
@@ -37,11 +39,16 @@ export function buildSummary(
   if (budgetUsedPercent >= 100) status = "over";
   else if (budgetUsedPercent >= 80) status = "warning";
 
-  return { income, incomeFromProfile, openingBalance, expenses, balance, savings, budgetUsedPercent, status };
+  return { income, incomeFromProfile, openingBalance, expenses, separateExpenses, balance, savings, budgetUsedPercent, status };
+}
+
+// Lançamentos que entram nos números do mês (tudo menos os gastos à parte, como o casamento).
+export function countedTransactions(transactions: Transaction[]): Transaction[] {
+  return transactions.filter((t) => !isSeparateExpense(t));
 }
 
 export function buildCategoryBreakdown(transactions: Transaction[]): CategoryBreakdownItem[] {
-  const expenses = transactions.filter((t) => t.type === "expense");
+  const expenses = countedTransactions(transactions).filter((t) => t.type === "expense");
   const totalExpenses = expenses.reduce((sum, t) => sum + t.amount, 0);
 
   const totals = new Map<string, number>();
@@ -72,7 +79,7 @@ export interface PaymentBreakdownItem {
 
 // Quanto saiu por forma de pagamento (Pix, débito, crédito…); gastos sem forma informada ficam em "Não informado".
 export function buildPaymentBreakdown(transactions: Transaction[]): PaymentBreakdownItem[] {
-  const expenses = transactions.filter((t) => t.type === "expense");
+  const expenses = countedTransactions(transactions).filter((t) => t.type === "expense");
   const totalExpenses = expenses.reduce((sum, t) => sum + t.amount, 0);
 
   const totals = new Map<string, number>();
@@ -92,7 +99,7 @@ export function buildPaymentBreakdown(transactions: Transaction[]): PaymentBreak
 }
 
 export function biggestExpense(transactions: Transaction[]): Transaction | null {
-  const expenses = transactions.filter((t) => t.type === "expense");
+  const expenses = countedTransactions(transactions).filter((t) => t.type === "expense");
   if (expenses.length === 0) return null;
   return expenses.reduce((max, t) => (t.amount > max.amount ? t : max), expenses[0]);
 }

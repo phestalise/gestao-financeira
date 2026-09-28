@@ -47,7 +47,11 @@ export async function ensureRecurringForMonth(month: MonthKey): Promise<void> {
   if (month < FIRST_MONTH || month > shiftMonth(currentBudgetMonth(), 1)) return;
 
   const pending = (await listRecurring()).filter(
-    (r) => r.active && r.startMonth <= month && !r.generatedMonths.includes(month)
+    (r) =>
+      r.active &&
+      r.startMonth <= month &&
+      (!r.endMonth || month <= r.endMonth) &&
+      !r.generatedMonths.includes(month)
   );
   if (pending.length === 0) return;
 

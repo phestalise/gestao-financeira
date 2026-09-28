@@ -1,4 +1,4 @@
-import { Category } from "@/types";
+import { Category, TransactionType } from "@/types";
 
 export const EXPENSE_CATEGORIES: Category[] = [
   { id: "alimentacao", name: "Alimentação", icon: "utensils", type: "expense" },
@@ -32,6 +32,13 @@ export const INCOME_CATEGORIES: Category[] = [
   { id: "reembolso", name: "Reembolso", icon: "undo-2", type: "income" },
   { id: "outros_entrada", name: "Outros", icon: "more-horizontal", type: "income" },
 ];
+
+// O casamento é acompanhado à parte: aparece nos lançamentos, mas não mexe na sobra do mês nem no saldo.
+export const SEPARATE_CATEGORY_IDS = new Set(["casamento"]);
+
+export function isSeparateExpense(t: { type: TransactionType; categoryId: string }): boolean {
+  return t.type === "expense" && SEPARATE_CATEGORY_IDS.has(t.categoryId);
+}
 
 export const ALL_CATEGORIES: Category[] = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
 

@@ -141,6 +141,11 @@ export default async function DashboardPage({ searchParams }: Props) {
               {formatCurrency(summary.income)} de renda + {formatCurrency(summary.openingBalance)} na conta −{" "}
               {formatCurrency(summary.expenses)} já gastos
             </p>
+            {summary.separateExpenses > 0 && (
+              <p className="mt-1 text-xs text-white/60">
+                Casamento à parte: {formatCurrency(summary.separateExpenses)} (não entra na sobra)
+              </p>
+            )}
             <OpeningBalanceEditor month={month} value={summary.openingBalance} />
             <div className="mt-4 flex items-center gap-2 text-sm">
               <span>{status.emoji}</span>

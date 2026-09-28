@@ -63,6 +63,7 @@ export interface RecurringExpense {
   paymentMethod: PaymentMethod | null;
   active: boolean;
   startMonth: string; // yyyy-MM: primeiro mês em que o gasto entra
+  endMonth?: string; // yyyy-MM: último mês (parcelas com fim); sem ele, vale para sempre
   generatedMonths: string[]; // meses (yyyy-MM) em que o lançamento já foi criado
   createdAt: string;
 }
@@ -80,6 +81,7 @@ export interface DashboardSummary {
   incomeFromProfile: boolean;
   openingBalance: number;
   expenses: number;
+  separateExpenses: number; // gastos à parte (casamento), fora de expenses e do saldo
   balance: number;
   savings: number;
   budgetUsedPercent: number;

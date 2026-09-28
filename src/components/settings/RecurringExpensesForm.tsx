@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { EXPENSE_CATEGORIES, getCategoryById } from "@/constants/categories";
 import { formatCurrency } from "@/lib/utils/currency";
+import { shortMonthLabel } from "@/lib/utils/date";
 import { SectionTitle } from "@/components/settings/ProfileForm";
 
 export function RecurringExpensesForm({ recurring }: { recurring: RecurringExpense[] }) {
@@ -78,6 +79,7 @@ export function RecurringExpensesForm({ recurring }: { recurring: RecurringExpen
                       <p className="truncate text-sm font-medium">{r.description}</p>
                       <p className="text-xs text-[var(--muted)]">
                         {category?.name} · todo dia {r.dayOfMonth}
+                        {r.endMonth && ` · até ${shortMonthLabel(r.endMonth)}`}
                       </p>
                     </div>
                   </div>

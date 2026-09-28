@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/Card";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { AddTransactionSheet } from "@/components/transactions/AddTransactionSheet";
-import { getCategoryById, PAYMENT_METHODS } from "@/constants/categories";
+import { getCategoryById, isSeparateExpense, PAYMENT_METHODS } from "@/constants/categories";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDateLabel, monthKeyOf, shortMonthLabel } from "@/lib/utils/date";
 
@@ -54,11 +54,13 @@ export function TransactionsExplorer({ initialTransactions }: { initialTransacti
   const totals = useMemo(() => {
     let income = 0;
     let expense = 0;
+    let separate = 0;
     for (const t of filtered) {
-      if (t.type === "income") income += t.amount;
+      if (isSeparateExpense(t)) separate += t.amount;
+      else if (t.type === "income") income += t.amount;
       else expense += t.amount;
     }
-    return { income, expense, balance: income - expense };
+    return { income, expense, separate, balance: income - expense };
   }, [filtered]);
 
   // Primeiro toque arma a exclusão, o segundo confirma; se não confirmar em 3s, desarma.
@@ -82,6 +84,11 @@ export function TransactionsExplorer({ initialTransactions }: { initialTransacti
         <Stat label="Saídas" value={totals.expense} icon={ArrowUpRight} tone="text-[var(--negative)]" />
         <Stat label="Saldo" value={totals.balance} tone={totals.balance >= 0 ? "text-[var(--positive)]" : "text-[var(--negative)]"} highlight />
       </div>
+      {totals.separate > 0 && (
+        <p className="-mt-3 mb-5 px-1 text-xs text-[var(--muted)]">
+          Casamento à parte: <span className="tabular-nums">{formatCurrency(totals.separate)}</span> (fora das saídas e do saldo)
+        </p>
+      )}
 
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="flex flex-1 items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2.5 transition-shadow focus-within:border-[var(--primary-strong)]/50 focus-within:ring-4 focus-within:ring-[var(--primary)]/20">
@@ -252,6 +259,7 @@ function Row({
               </Tag>
             )}
             {method && <Tag>{method}</Tag>}
+            {isSeparateExpense(t) && <Tag>à parte</Tag>}
             {otherMonth &&
               (t.paymentMethod === "credito" ? (
                 <Tag>
