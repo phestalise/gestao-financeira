@@ -3,10 +3,10 @@ import { listTransactions } from "@/lib/firebase/transactions";
 import { getProfile } from "@/lib/firebase/profile";
 import { buildSummary, buildCategoryBreakdown, biggestExpense } from "@/lib/services/dashboard";
 import { listOpeningBalances } from "@/lib/firebase/months";
-import { currentMonthKey, transactionMonth } from "@/lib/utils/date";
+import { currentBudgetMonth, transactionMonth } from "@/lib/utils/date";
 
 export async function GET() {
-  const month = currentMonthKey();
+  const month = currentBudgetMonth();
   const [allTransactions, profile, openingBalances] = await Promise.all([
     listTransactions(),
     getProfile(),

@@ -9,7 +9,7 @@ import { X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from "@/constants/categories";
-import { today } from "@/lib/utils/date";
+import { budgetMonthOf, monthLabel, today } from "@/lib/utils/date";
 import { TransactionType } from "@/types";
 
 const formSchema = z.object({
@@ -76,6 +76,10 @@ export function AddTransactionSheet({ open, onClose, initialValues, editId }: Pr
 
   const type = watch("type") as TransactionType;
   const categories = type === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+  const paymentMethod = watch("paymentMethod");
+  const date = watch("date");
+  // Na edição, o mês é decidido no servidor (pode estar preso a uma fatura); aqui só avisamos em lançamentos novos.
+  const countsIn = !editId && /^\d{4}-\d{2}-\d{2}$/.test(date) ? monthLabel(budgetMonthOf(date)) : null;
 
   async function onSubmit(values: FormValues) {
     setSubmitError(null);
@@ -197,29 +201,41 @@ export function AddTransactionSheet({ open, onClose, initialValues, editId }: Pr
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block text-sm text-[var(--muted)]">Data</label>
-              <input
-                type="date"
-                className="w-full rounded-xl border border-[var(--border)] px-3 py-3 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-strong)]/35 transition-shadow"
-                {...register("date")}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm text-[var(--muted)]">Pagamento</label>
-              <select
-                className="w-full rounded-xl border border-[var(--border)] px-3 py-3 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-strong)]/35 transition-shadow"
-                {...register("paymentMethod")}
-              >
-                <option value="">Não informado</option>
-                {PAYMENT_METHODS.map((p) => (
-                  <option key={p.id} value={p.id}>
+          <div>
+            <label className="mb-2 block text-sm text-[var(--muted)]">Como pagou</label>
+            <div className="flex flex-wrap gap-2">
+              {PAYMENT_METHODS.map((p) => {
+                const selected = paymentMethod === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setValue("paymentMethod", selected ? null : p.id)}
+                    className={`rounded-full border px-3.5 py-2 text-sm transition-all ${
+                      selected
+                        ? "border-[var(--primary)] bg-[var(--primary-soft)] font-medium text-[var(--foreground)]"
+                        : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--surface-2)]"
+                    }`}
+                  >
                     {p.label}
-                  </option>
-                ))}
-              </select>
+                  </button>
+                );
+              })}
             </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm text-[var(--muted)]">Data</label>
+            <input
+              type="date"
+              className="w-full rounded-xl border border-[var(--border)] px-3 py-3 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-strong)]/35 transition-shadow"
+              {...register("date")}
+            />
+            {countsIn && (
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Conta no orçamento de <span className="font-medium capitalize text-[var(--foreground)]">{countsIn}</span>
+              </p>
+            )}
           </div>
 
           <div>

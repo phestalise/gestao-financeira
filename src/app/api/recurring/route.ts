@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { listRecurring, createRecurring } from "@/lib/firebase/recurring";
 import { EXPENSE_CATEGORIES } from "@/constants/categories";
-import { currentMonthKey, isMonthKey } from "@/lib/utils/date";
+import { currentBudgetMonth, isMonthKey } from "@/lib/utils/date";
 
 const expenseCategoryIds = EXPENSE_CATEGORIES.map((c) => c.id) as [string, ...string[]];
 
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
   const recurring = await createRecurring({
     ...result.data,
-    startMonth: result.data.startMonth ?? currentMonthKey(),
+    startMonth: result.data.startMonth ?? currentBudgetMonth(),
   });
   return NextResponse.json({ recurring }, { status: 201 });
 }

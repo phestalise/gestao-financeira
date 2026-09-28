@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CalendarDays,
+  CreditCard,
 } from "lucide-react";
 import { listTransactions } from "@/lib/firebase/transactions";
 import { getProfile } from "@/lib/firebase/profile";
@@ -19,9 +20,11 @@ import {
   buildCategoryBreakdown,
   biggestExpense,
   buildMonthlyHistory,
+  buildPaymentBreakdown,
 } from "@/lib/services/dashboard";
 import {
-  currentMonthKey,
+  currentBudgetMonth,
+  FIRST_MONTH,
   formatDateLabel,
   isMonthKey,
   monthLabel,
@@ -34,7 +37,7 @@ import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { getCategoryById } from "@/constants/categories";
+import { getCategoryById, PAYMENT_METHODS } from "@/constants/categories";
 
 export const dynamic = "force-dynamic";
 
@@ -52,13 +55,14 @@ interface Props {
 
 export default async function DashboardPage({ searchParams }: Props) {
   const { mes } = await searchParams;
-  const thisMonth = currentMonthKey();
+  // O mês que está valendo: gastos da última semana já contam no mês seguinte.
+  const thisMonth = currentBudgetMonth();
   // O próximo mês fica liberado para planejamento.
   const lastMonth = shiftMonth(thisMonth, 1);
 
   await ensureRecurringForMonth(thisMonth);
   await ensureRecurringForMonth(lastMonth);
-  if (isMonthKey(mes) && mes < thisMonth) await ensureRecurringForMonth(mes);
+  if (isMonthKey(mes) && mes >= FIRST_MONTH && mes < thisMonth) await ensureRecurringForMonth(mes);
 
   const [allTransactions, profile, openingBalances] = await Promise.all([
     listTransactions(),
@@ -69,20 +73,21 @@ export default async function DashboardPage({ searchParams }: Props) {
 
   // Sem mês na URL, abre o mês atual; se ele estiver vazio e o próximo já tiver planejamento, abre o próximo.
   const defaultMonth = !monthsWithData.has(thisMonth) && monthsWithData.has(lastMonth) ? lastMonth : thisMonth;
-  const month = isMonthKey(mes) && mes <= lastMonth ? mes : defaultMonth;
+  const month = isMonthKey(mes) && mes >= FIRST_MONTH && mes <= lastMonth ? mes : defaultMonth;
   const isPlanning = month > thisMonth;
   const transactions = allTransactions.filter((t) => transactionMonth(t) === month);
 
   // O histórico lista só meses com algum lançamento ou valor na conta.
   const historyMonths = Array.from({ length: HISTORY_MONTHS + 1 }, (_, i) => shiftMonth(lastMonth, -i)).filter(
-    (m) => monthsWithData.has(m)
+    (m) => m >= FIRST_MONTH && monthsWithData.has(m)
   );
   const history = buildMonthlyHistory(allTransactions, profile, historyMonths, openingBalances);
-  const previousMonth = shiftMonth(month, -1);
+  const previousMonth = month > FIRST_MONTH ? shiftMonth(month, -1) : null;
   const nextMonth = month < lastMonth ? shiftMonth(month, 1) : null;
 
   const summary = buildSummary(transactions, profile, openingBalances[month] ?? 0);
   const breakdown = buildCategoryBreakdown(transactions).slice(0, 5);
+  const byPayment = buildPaymentBreakdown(transactions);
   const biggest = biggestExpense(transactions);
   const recent = transactions.slice(0, 5);
   const status = STATUS_LABEL[summary.status];
@@ -90,13 +95,19 @@ export default async function DashboardPage({ searchParams }: Props) {
   return (
     <div className="mx-auto max-w-6xl px-4 pb-8 pt-[max(env(safe-area-inset-top),1.25rem)] sm:px-8 sm:pt-8">
       <div className="mb-4 flex items-center justify-between">
-        <Link
-          href={`/painel?mes=${previousMonth}`}
-          aria-label="Mês anterior"
-          className="rounded-full p-2 hover:bg-[var(--surface-2)]"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Link>
+        {previousMonth ? (
+          <Link
+            href={`/painel?mes=${previousMonth}`}
+            aria-label="Mês anterior"
+            className="rounded-full p-2 hover:bg-[var(--surface-2)]"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Link>
+        ) : (
+          <span className="p-2 opacity-30">
+            <ChevronLeft className="h-5 w-5" />
+          </span>
+        )}
         <div className="text-center">
           <h1 className="text-xl font-semibold capitalize tracking-tight">{monthLabel(month)}</h1>
           {isPlanning && <p className="text-xs text-[var(--muted)]">Planejamento</p>}
@@ -122,13 +133,13 @@ export default async function DashboardPage({ searchParams }: Props) {
             bordered={false}
             className="app-hero mb-5 overflow-hidden p-6 text-white"
           >
-            <p className="text-sm text-white/70">Resultado do mês</p>
+            <p className="text-sm text-white/70">Sobra do mês</p>
             <p className="mt-1 text-[2.5rem] font-semibold leading-none tracking-tight tabular-nums">
               {formatCurrency(summary.balance)}
             </p>
             <p className="mt-2 text-xs text-white/60">
               {formatCurrency(summary.income)} de renda + {formatCurrency(summary.openingBalance)} na conta −{" "}
-              {formatCurrency(summary.expenses)} de despesas
+              {formatCurrency(summary.expenses)} já gastos
             </p>
             <OpeningBalanceEditor month={month} value={summary.openingBalance} />
             <div className="mt-4 flex items-center gap-2 text-sm">
@@ -268,6 +279,26 @@ export default async function DashboardPage({ searchParams }: Props) {
             )}
           </Card>
 
+          {byPayment.length > 0 && (
+            <Card className="mb-5 p-5">
+              <div className="mb-4 flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-[var(--muted)]" />
+                <h2 className="text-[0.95rem] font-semibold tracking-tight">Como você pagou</h2>
+              </div>
+              <div className="space-y-3">
+                {byPayment.map((item) => (
+                  <div key={item.method}>
+                    <div className="mb-1.5 flex items-center justify-between text-sm">
+                      <span>{item.label}</span>
+                      <span className="font-medium tabular-nums">{formatCurrency(item.total)}</span>
+                    </div>
+                    <ProgressBar percent={item.percentOfExpenses} />
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
           <Card className="p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-[0.95rem] font-semibold tracking-tight">Últimos lançamentos</h2>
@@ -295,7 +326,9 @@ export default async function DashboardPage({ searchParams }: Props) {
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium">{t.description}</p>
                           <p className="truncate text-xs text-[var(--muted)]">
-                            {category?.name} • {formatDateLabel(t.date)}
+                            {[category?.name, formatDateLabel(t.date), PAYMENT_METHODS.find((p) => p.id === t.paymentMethod)?.label]
+                              .filter(Boolean)
+                              .join(" • ")}
                           </p>
                         </div>
                       </div>

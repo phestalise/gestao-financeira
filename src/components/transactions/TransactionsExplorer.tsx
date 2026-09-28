@@ -3,13 +3,13 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
-import { Search, Pencil, Trash2, SearchX, X, ArrowDownLeft, ArrowUpRight, Repeat, CreditCard } from "lucide-react";
+import { Search, Pencil, Trash2, SearchX, X, ArrowDownLeft, ArrowUpRight, Repeat, CreditCard, CalendarClock } from "lucide-react";
 import { Transaction } from "@/types";
 import { Card } from "@/components/ui/Card";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { AddTransactionSheet } from "@/components/transactions/AddTransactionSheet";
-import { getCategoryById } from "@/constants/categories";
+import { getCategoryById, PAYMENT_METHODS } from "@/constants/categories";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDateLabel, monthKeyOf, shortMonthLabel } from "@/lib/utils/date";
 
@@ -224,8 +224,9 @@ function Row({
   onDelete: () => void;
 }) {
   const category = getCategoryById(t.categoryId);
-  // Compra no cartão que pesa na fatura de outro mês.
-  const invoiceMonth = t.referenceMonth && t.referenceMonth !== monthKeyOf(t.date) ? t.referenceMonth : null;
+  // Lançamento que pesa em outro mês: a fatura do cartão ou um gasto da última semana, que já conta no mês seguinte.
+  const otherMonth = t.referenceMonth && t.referenceMonth !== monthKeyOf(t.date) ? t.referenceMonth : null;
+  const method = PAYMENT_METHODS.find((p) => p.id === t.paymentMethod)?.label;
 
   return (
     <div
@@ -238,8 +239,8 @@ function Row({
         <CategoryBadge categoryId={t.categoryId} icon={category?.icon ?? "more-horizontal"} />
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{t.description}</p>
-          <p className="flex min-w-0 items-center gap-1.5 text-xs text-[var(--muted)]">
-            <span className="truncate">{category?.name}</span>
+          <p className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-[var(--muted)]">
+            <span>{category?.name}</span>
             {t.installment && (
               <Tag>
                 {t.installment.current}/{t.installment.total}
@@ -250,11 +251,17 @@ function Row({
                 <Repeat className="h-3 w-3" /> fixo
               </Tag>
             )}
-            {invoiceMonth && (
-              <Tag>
-                <CreditCard className="h-3 w-3" /> fatura {shortMonthLabel(invoiceMonth)}
-              </Tag>
-            )}
+            {method && <Tag>{method}</Tag>}
+            {otherMonth &&
+              (t.paymentMethod === "credito" ? (
+                <Tag>
+                  <CreditCard className="h-3 w-3" /> fatura {shortMonthLabel(otherMonth)}
+                </Tag>
+              ) : (
+                <Tag>
+                  <CalendarClock className="h-3 w-3" /> {shortMonthLabel(otherMonth)}
+                </Tag>
+              ))}
           </p>
         </div>
       </button>

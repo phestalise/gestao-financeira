@@ -68,3 +68,22 @@ export function monthLabel(key: MonthKey): string {
 export function shortMonthLabel(key: MonthKey): string {
   return format(parseISO(`${key}-01`), "MMM/yy", { locale: ptBR });
 }
+
+// O controle começa em outubro de 2026: meses anteriores ficam fora do app (os dados continuam no banco).
+export const FIRST_MONTH: MonthKey = "2026-10";
+
+// O salário cai no fim do mês, então o que é pago na última semana já sai do dinheiro do mês seguinte.
+const LAST_WEEK_DAYS = 7;
+
+// Mês do orçamento para um lançamento feito nessa data (sem fatura de cartão definida).
+export function budgetMonthOf(isoDate: string): MonthKey {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const lastDay = new Date(year, month, 0).getDate();
+  const key = day > lastDay - LAST_WEEK_DAYS ? shiftMonth(monthKeyOf(isoDate), 1) : monthKeyOf(isoDate);
+  return key < FIRST_MONTH ? FIRST_MONTH : key;
+}
+
+// O mês que está "valendo" hoje: é nele que um gasto lançado agora entra.
+export function currentBudgetMonth(): MonthKey {
+  return budgetMonthOf(today());
+}

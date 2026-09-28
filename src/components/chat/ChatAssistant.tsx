@@ -19,10 +19,11 @@ import { AddTransactionSheet } from "@/components/transactions/AddTransactionShe
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { getCategoryById, PAYMENT_METHODS } from "@/constants/categories";
 import { formatCurrency } from "@/lib/utils/currency";
-import { formatDateLabel } from "@/lib/utils/date";
-import { AIParsedTransaction } from "@/types";
+import { budgetMonthOf, formatDateLabel, monthLabel } from "@/lib/utils/date";
+import { AIParsedTransaction, PaymentMethod } from "@/types";
 
 export interface MonthSnapshot {
+  monthName: string;
   balance: number;
   expenses: number;
   budgetUsedPercent: number;
@@ -235,6 +236,18 @@ export function ChatAssistant({ firstName, snapshot }: { firstName?: string; sna
             {loading ? "pensando…" : "online · conhece seus números"}
           </p>
         </div>
+        {snapshot && (
+          <div className="shrink-0 text-right leading-tight">
+            <p className="text-[11px] text-[var(--muted)]">Sobra de {snapshot.monthName}</p>
+            <p
+              key={snapshot.balance}
+              className="ai-msg-in text-[15px] font-semibold tabular-nums"
+              style={{ color: snapshot.balance < 0 ? "var(--negative)" : "var(--foreground)" }}
+            >
+              {formatCurrency(snapshot.balance)}
+            </p>
+          </div>
+        )}
         {!empty && (
           <button
             onClick={resetConversation}
@@ -283,6 +296,11 @@ export function ChatAssistant({ firstName, snapshot }: { firstName?: string; sna
                         status={m.previewStatus ?? "pending"}
                         onConfirm={() => confirmTransaction(m)}
                         onEdit={() => setEditingPreview(m.preview!)}
+                        onMethod={(paymentMethod) =>
+                          setMessages((prev) =>
+                            prev.map((x) => (x.id === m.id && x.preview ? { ...x, preview: { ...x.preview, paymentMethod } } : x))
+                          )
+                        }
                       />
                     )}
                   </div>
@@ -304,7 +322,7 @@ export function ChatAssistant({ firstName, snapshot }: { firstName?: string; sna
       </div>
 
       {/* caixa de mensagem */}
-      <div className="px-3 pb-8 pt-2 sm:px-8 sm:pb-6">
+      <div className="px-3 pb-3 pt-2 sm:px-8 sm:pb-6">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -399,8 +417,8 @@ function EmptyState({
     snapshot?.status === "over" ? "var(--negative)" : snapshot?.status === "warning" ? "var(--warning)" : "var(--positive)";
 
   return (
-    <div className="mx-auto flex min-h-full max-w-3xl flex-col justify-center px-4 py-8 sm:px-8">
-      <div className="ai-msg-in relative mb-6 h-16 w-16">
+    <div className="mx-auto flex min-h-full max-w-3xl flex-col justify-end px-4 py-6 sm:justify-center sm:px-8 sm:py-8">
+      <div className="ai-msg-in relative mb-6 hidden h-16 w-16 sm:block">
         <span className="ai-orb-glow absolute inset-[-40%] rounded-full bg-[radial-gradient(circle,rgba(47,111,214,0.45),transparent_65%)]" />
         <span className="ai-orb absolute inset-0" />
       </div>
@@ -409,17 +427,14 @@ function EmptyState({
         {hello}
         {firstName ? `, ${firstName}` : ""}! 👋
       </p>
-      <h1 className="ai-msg-in mt-1 text-3xl font-semibold leading-tight tracking-tight sm:text-4xl" style={{ animationDelay: "120ms" }}>
+      <h1 className="ai-msg-in mt-1 text-[1.75rem] font-semibold leading-tight tracking-tight sm:text-4xl" style={{ animationDelay: "120ms" }}>
         O que aconteceu com seu <span className="brand-serif brand-gradient pr-1 text-[1.15em]">dinheiro</span> hoje?
       </h1>
 
       {snapshot && (
         <div className="ai-msg-in mt-5 flex flex-wrap gap-2 text-xs sm:text-sm" style={{ animationDelay: "180ms" }}>
-          <span className="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5">
+          <span className="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[var(--muted)]">
             <span className="h-2 w-2 rounded-full" style={{ background: statusColor }} />
-            Sobra do mês <strong className="tabular-nums">{formatCurrency(snapshot.balance)}</strong>
-          </span>
-          <span className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[var(--muted)]">
             <strong className="text-[var(--foreground)] tabular-nums">{snapshot.budgetUsedPercent}%</strong> da renda gasto
           </span>
           <span className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[var(--muted)]">
@@ -428,7 +443,27 @@ function EmptyState({
         </div>
       )}
 
-      <div className="mt-8 grid gap-3 sm:grid-cols-3">
+      {/* celular: sugestões compactas, logo acima da caixa de texto */}
+      <div className="ai-msg-in mt-6 space-y-2 sm:hidden" style={{ animationDelay: "240ms" }}>
+        <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]">Experimente</p>
+        <div className="flex flex-wrap gap-2">
+          {LOG_EXAMPLES.map((t) => (
+            <Chip key={t} onClick={() => onExample(t)}>
+              “{t}”
+            </Chip>
+          ))}
+          {QUESTIONS.map((t) => (
+            <Chip key={t} onClick={() => onQuestion(t)}>
+              {t}
+            </Chip>
+          ))}
+          <Chip onClick={onPhoto}>
+            <Camera className="h-3.5 w-3.5" /> Ler comprovante
+          </Chip>
+        </div>
+      </div>
+
+      <div className="mt-8 hidden gap-3 sm:grid sm:grid-cols-3">
         <SuggestionCard icon={PlusCircle} title="Lançar" subtitle="Escreva do seu jeito" delay={240}>
           {LOG_EXAMPLES.map((t) => (
             <SuggestionItem key={t} onClick={() => onExample(t)}>
@@ -491,6 +526,18 @@ function SuggestionCard({
   );
 }
 
+function Chip({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="ai-card flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-left text-[13px] text-[var(--foreground)]"
+    >
+      {children}
+    </button>
+  );
+}
+
 function SuggestionItem({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
     <button
@@ -508,11 +555,13 @@ function PreviewCard({
   status,
   onConfirm,
   onEdit,
+  onMethod,
 }: {
   preview: AIParsedTransaction;
   status: NonNullable<ChatMessage["previewStatus"]>;
   onConfirm: () => void;
   onEdit: () => void;
+  onMethod: (method: PaymentMethod | null) => void;
 }) {
   const category = getCategoryById(preview.categoryId);
   const method = PAYMENT_METHODS.find((p) => p.id === preview.paymentMethod)?.label;
@@ -541,6 +590,38 @@ function PreviewCard({
           {formatCurrency(preview.amount)}
         </p>
       </div>
+
+      {status !== "saved" && (
+        <div className="px-4 pb-3">
+          <p className="mb-1.5 text-xs text-[var(--muted)]">
+            Como pagou?
+            {preview.date && (
+              <> · conta em <span className="capitalize">{monthLabel(budgetMonthOf(preview.date))}</span></>
+            )}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {PAYMENT_METHODS.filter((p) => p.id !== "outro").map((p) => {
+              const selected = preview.paymentMethod === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  disabled={status === "saving"}
+                  onClick={() => onMethod(selected ? null : p.id)}
+                  className={clsx(
+                    "rounded-full border px-2.5 py-1 text-xs transition-colors",
+                    selected
+                      ? "border-[var(--primary)] bg-[var(--primary-soft)] font-medium text-[var(--foreground)]"
+                      : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--surface-2)]"
+                  )}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {preview.confidence === "low" && status !== "saved" && (
         <p className="mx-4 mb-3 rounded-xl bg-[var(--warning-soft)] px-3 py-2 text-xs text-[var(--warning)]">

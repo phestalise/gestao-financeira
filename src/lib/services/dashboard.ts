@@ -1,5 +1,5 @@
 import { Transaction, DashboardSummary, UserProfile } from "@/types";
-import { getCategoryById } from "@/constants/categories";
+import { getCategoryById, PAYMENT_METHODS } from "@/constants/categories";
 import { transactionMonth, type MonthKey } from "@/lib/utils/date";
 
 export interface CategoryBreakdownItem {
@@ -60,6 +60,34 @@ export function buildCategoryBreakdown(transactions: Transaction[]): CategoryBre
         percentOfExpenses: totalExpenses > 0 ? Math.round((total / totalExpenses) * 100) : 0,
       };
     })
+    .sort((a, b) => b.total - a.total);
+}
+
+export interface PaymentBreakdownItem {
+  method: string;
+  label: string;
+  total: number;
+  percentOfExpenses: number;
+}
+
+// Quanto saiu por forma de pagamento (Pix, débito, crédito…); gastos sem forma informada ficam em "Não informado".
+export function buildPaymentBreakdown(transactions: Transaction[]): PaymentBreakdownItem[] {
+  const expenses = transactions.filter((t) => t.type === "expense");
+  const totalExpenses = expenses.reduce((sum, t) => sum + t.amount, 0);
+
+  const totals = new Map<string, number>();
+  for (const t of expenses) {
+    const method = t.paymentMethod ?? "nao_informado";
+    totals.set(method, (totals.get(method) ?? 0) + t.amount);
+  }
+
+  return Array.from(totals.entries())
+    .map(([method, total]) => ({
+      method,
+      label: PAYMENT_METHODS.find((p) => p.id === method)?.label ?? "Não informado",
+      total,
+      percentOfExpenses: totalExpenses > 0 ? Math.round((total / totalExpenses) * 100) : 0,
+    }))
     .sort((a, b) => b.total - a.total);
 }
 

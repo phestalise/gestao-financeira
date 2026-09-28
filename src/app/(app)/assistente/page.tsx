@@ -3,12 +3,12 @@ import { listTransactions } from "@/lib/firebase/transactions";
 import { getProfile } from "@/lib/firebase/profile";
 import { listOpeningBalances } from "@/lib/firebase/months";
 import { buildSummary } from "@/lib/services/dashboard";
-import { currentMonthKey, transactionMonth } from "@/lib/utils/date";
+import { currentBudgetMonth, monthLabel, transactionMonth } from "@/lib/utils/date";
 
 export const dynamic = "force-dynamic";
 
 export default async function AssistentePage() {
-  const month = currentMonthKey();
+  const month = currentBudgetMonth();
   const [transactions, profile, openingBalances] = await Promise.all([
     listTransactions(),
     getProfile(),
@@ -21,6 +21,7 @@ export default async function AssistentePage() {
   const snapshot: MonthSnapshot | null =
     summary.income > 0 || inMonth.length > 0
       ? {
+          monthName: monthLabel(month).split(" ")[0],
           balance: summary.balance,
           expenses: summary.expenses,
           budgetUsedPercent: summary.budgetUsedPercent,

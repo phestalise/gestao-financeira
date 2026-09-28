@@ -1,7 +1,7 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { currentUserDoc, getDb } from "@/lib/firebase/admin";
 import { RecurringExpense } from "@/types";
-import { currentMonthKey, shiftMonth, type MonthKey } from "@/lib/utils/date";
+import { currentBudgetMonth, FIRST_MONTH, shiftMonth, type MonthKey } from "@/lib/utils/date";
 
 async function collection() {
   return (await currentUserDoc()).collection("recurring");
@@ -44,7 +44,7 @@ function dateInMonth(month: MonthKey, dayOfMonth: number): string {
 // para planejá-lo; meses mais distantes não são gerados.
 // O mês fica marcado em generatedMonths, então apagar ou editar o lançamento não faz ele voltar.
 export async function ensureRecurringForMonth(month: MonthKey): Promise<void> {
-  if (month > shiftMonth(currentMonthKey(), 1)) return;
+  if (month < FIRST_MONTH || month > shiftMonth(currentBudgetMonth(), 1)) return;
 
   const pending = (await listRecurring()).filter(
     (r) => r.active && r.startMonth <= month && !r.generatedMonths.includes(month)
@@ -69,6 +69,8 @@ export async function ensureRecurringForMonth(month: MonthKey): Promise<void> {
           categoryId: r.categoryId,
           description: r.description,
           date: dateInMonth(month, r.dayOfMonth),
+          // O gasto fixo pertence ao mês gerado, mesmo que o dia caia na última semana.
+          referenceMonth: month,
           paymentMethod: r.paymentMethod,
           note: "Gasto fixo mensal",
           recurringId: r.id,

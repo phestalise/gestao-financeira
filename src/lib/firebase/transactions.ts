@@ -1,5 +1,6 @@
 import { currentUserDoc } from "@/lib/firebase/admin";
 import { Transaction } from "@/types";
+import { budgetMonthOf, FIRST_MONTH, transactionMonth } from "@/lib/utils/date";
 
 async function collection() {
   return (await currentUserDoc()).collection("transactions");
@@ -21,10 +22,12 @@ export async function listTransactions(filters: TransactionFilters = {}): Promis
   const snapshot = await query.orderBy("date", "desc").get();
   // Categoria e tipo são filtrados em memória: combinados com o filtro/ordenação por data, o Firestore
   // exigiria um índice composto para cada combinação. O volume de um app pessoal cabe tranquilo aqui.
+  // Meses anteriores ao início do controle não aparecem no app.
   return snapshot.docs
     .map((doc) => ({ id: doc.id, ...doc.data() }) as Transaction)
     .filter(
       (t) =>
+        transactionMonth(t) >= FIRST_MONTH &&
         (!filters.categoryId || t.categoryId === filters.categoryId) &&
         (!filters.type || t.type === filters.type)
     );
@@ -40,7 +43,8 @@ export async function createTransaction(
   data: Omit<Transaction, "id" | "createdAt" | "updatedAt">
 ): Promise<Transaction> {
   const now = new Date().toISOString();
-  const docRef = await (await collection()).add({ ...data, createdAt: now, updatedAt: now });
+  const referenceMonth = data.referenceMonth ?? budgetMonthOf(data.date);
+  const docRef = await (await collection()).add({ ...data, referenceMonth, createdAt: now, updatedAt: now });
   const doc = await docRef.get();
   return { id: doc.id, ...doc.data() } as Transaction;
 }
@@ -53,7 +57,13 @@ export async function updateTransaction(
   const existing = await ref.get();
   if (!existing.exists) return null;
 
-  await ref.update({ ...data, updatedAt: new Date().toISOString() });
+  // Mudou a data: o mês do orçamento acompanha, a não ser que o lançamento esteja preso a uma fatura de cartão.
+  const current = existing.data() as Transaction;
+  const followsDate = !current.referenceMonth || current.referenceMonth === budgetMonthOf(current.date);
+  const update = { ...data };
+  if (data.date && !data.referenceMonth && followsDate) update.referenceMonth = budgetMonthOf(data.date);
+
+  await ref.update({ ...update, updatedAt: new Date().toISOString() });
   const updated = await ref.get();
   return { id: updated.id, ...updated.data() } as Transaction;
 }
