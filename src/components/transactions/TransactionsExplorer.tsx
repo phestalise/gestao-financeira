@@ -60,7 +60,7 @@ export function TransactionsExplorer({ initialTransactions }: { initialTransacti
       else if (t.type === "income") income += t.amount;
       else expense += t.amount;
     }
-    return { income, expense, separate, balance: income - expense };
+    return { income, expense, separate, balance: income - expense - separate };
   }, [filtered]);
 
   // Primeiro toque arma a exclusão, o segundo confirma; se não confirmar em 3s, desarma.
@@ -86,7 +86,7 @@ export function TransactionsExplorer({ initialTransactions }: { initialTransacti
       </div>
       {totals.separate > 0 && (
         <p className="-mt-3 mb-5 px-1 text-xs text-[var(--muted)]">
-          Casamento à parte: <span className="tabular-nums">{formatCurrency(totals.separate)}</span> (fora das saídas e do saldo)
+          Casamento à parte: <span className="tabular-nums">{formatCurrency(totals.separate)}</span> (fora das saídas, mas descontado do saldo)
         </p>
       )}
 

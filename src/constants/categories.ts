@@ -33,7 +33,7 @@ export const INCOME_CATEGORIES: Category[] = [
   { id: "outros_entrada", name: "Outros", icon: "more-horizontal", type: "income" },
 ];
 
-// O casamento é acompanhado à parte: aparece nos lançamentos, mas não mexe na sobra do mês nem no saldo.
+// O casamento é acompanhado à parte das categorias, mas sai do saldo como qualquer gasto (vem da mesma renda).
 export const SEPARATE_CATEGORY_IDS = new Set(["casamento"]);
 
 export function isSeparateExpense(t: { type: TransactionType; categoryId: string }): boolean {

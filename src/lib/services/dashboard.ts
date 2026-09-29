@@ -26,14 +26,15 @@ export function buildSummary(
     .reduce((sum, t) => sum + t.amount, 0);
 
   // Sem entradas lançadas no mês, a renda mensal cadastrada no perfil vale como a renda do mês.
-  // Saldo do mês = renda + valor na conta − gastos.
+  // Saldo do mês = renda + valor na conta − gastos − fixos do casamento: tudo sai da mesma renda.
   const incomeFromProfile = registeredIncome === 0 && profile.income > 0;
   const income = incomeFromProfile ? profile.income : registeredIncome;
+  const totalOut = expenses + separateExpenses;
 
-  const balance = income + openingBalance - expenses;
-  const savings = Math.max(income - expenses, 0);
+  const balance = income + openingBalance - totalOut;
+  const savings = Math.max(income - totalOut, 0);
 
-  const budgetUsedPercent = income > 0 ? Math.round((expenses / income) * 100) : 0;
+  const budgetUsedPercent = income > 0 ? Math.round((totalOut / income) * 100) : 0;
 
   let status: DashboardSummary["status"] = "ok";
   if (budgetUsedPercent >= 100) status = "over";
@@ -131,7 +132,7 @@ export function buildMonthlyHistory(
       income: summary.income,
       incomeFromProfile: summary.incomeFromProfile,
       openingBalance: summary.openingBalance,
-      expenses: summary.expenses,
+      expenses: summary.expenses + summary.separateExpenses,
       balance: summary.balance,
     };
   });

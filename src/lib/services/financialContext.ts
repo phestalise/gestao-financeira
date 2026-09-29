@@ -31,7 +31,7 @@ export async function buildFinancialContext() {
     rendaMensalCadastrada: profile.income,
     metaEconomiaPercent: profile.savingsGoalPercent ?? null,
     observacaoSaldo:
-      "Resultado do mês = renda + valor na conta no início do mês − despesas. Sem entradas lançadas, a renda do mês é a renda mensal cadastrada. Compras no cartão contam no mês em que a fatura é paga (mesReferencia), não na data da compra. O que é pago na última semana do mês já conta no mês seguinte (o salário cai no fim do mês). O controle começa em outubro de 2026; não há dados antes disso. Gastos do casamento (categoria casamento, até abril de 2027) ficam à parte: estão nos lançamentos, mas fora das despesas e do resultado (resumo.separateExpenses).",
+      "Resultado do mês = renda + valor na conta no início do mês − despesas. Sem entradas lançadas, a renda do mês é a renda mensal cadastrada. Compras no cartão contam no mês em que a fatura é paga (mesReferencia), não na data da compra. O que é pago na última semana do mês já conta no mês seguinte (o salário cai no fim do mês). O controle começa em outubro de 2026; não há dados antes disso. Gastos do casamento (categoria casamento, até abril de 2027) aparecem à parte das despesas (resumo.separateExpenses), mas são descontados do resultado: tudo sai da mesma renda.",
     gastosFixosMensais: recurring
       .filter((r) => r.active)
       .map((r) => ({ descricao: r.description, valor: r.amount, categoria: r.categoryId, dia: r.dayOfMonth })),

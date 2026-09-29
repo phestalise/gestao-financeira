@@ -81,7 +81,7 @@ export interface DashboardSummary {
   incomeFromProfile: boolean;
   openingBalance: number;
   expenses: number;
-  separateExpenses: number; // gastos à parte (casamento), fora de expenses e do saldo
+  separateExpenses: number; // fixos do casamento: fora de expenses e das categorias, mas descontados do saldo
   balance: number;
   savings: number;
   budgetUsedPercent: number;
