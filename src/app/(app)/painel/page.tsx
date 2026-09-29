@@ -91,6 +91,10 @@ export default async function DashboardPage({ searchParams }: Props) {
   const biggest = biggestExpense(transactions);
   const recent = transactions.slice(0, 5);
   const status = STATUS_LABEL[summary.status];
+  // Cada número do painel leva aos lançamentos que formam ele.
+  const listHref = (params: Record<string, string> = {}) =>
+    `/transacoes?${new URLSearchParams({ mes: month, ...params })}`;
+  const linkCard = "block rounded-2xl transition-transform hover:-translate-y-0.5 active:scale-[0.98]";
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-8 pt-[max(env(safe-area-inset-top),1.25rem)] sm:px-8 sm:pt-8">
@@ -142,6 +146,12 @@ export default async function DashboardPage({ searchParams }: Props) {
               {formatCurrency(summary.expenses)} já gastos
               {summary.separateExpenses > 0 && <> − {formatCurrency(summary.separateExpenses)} do casamento</>}
             </p>
+            <Link
+              href={listHref({ tipo: "expense" })}
+              className="mt-3 inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/25"
+            >
+              Ver o que eu gastei <ChevronRight className="h-3.5 w-3.5" />
+            </Link>
             <OpeningBalanceEditor month={month} value={summary.openingBalance} />
             <div className="mt-4 flex items-center gap-2 text-sm">
               <span>{status.emoji}</span>
@@ -154,27 +164,33 @@ export default async function DashboardPage({ searchParams }: Props) {
           </Card>
 
           <div className="mb-5 grid grid-cols-3 gap-2 sm:gap-3">
-            <Card className="min-w-0 p-3 sm:p-4">
-              <ArrowDownLeft className="h-4 w-4 text-[var(--positive)]" />
-              <p className="mt-2 text-xs text-[var(--muted)]">
-                {summary.incomeFromProfile ? "Renda (cadastrada)" : "Entradas"}
-              </p>
-              <p className="mt-0.5 text-[0.95rem] font-semibold tracking-tight tabular-nums sm:text-lg">
-                {formatCurrency(summary.income)}
-              </p>
-            </Card>
-            <Card className="min-w-0 p-3 sm:p-4">
-              <ArrowUpRight className="h-4 w-4 text-[var(--negative)]" />
-              <p className="mt-2 text-xs text-[var(--muted)]">Gastos</p>
-              <p className="mt-0.5 text-[0.95rem] font-semibold tracking-tight tabular-nums sm:text-lg">
-                {formatCurrency(summary.expenses)}
-              </p>
-            </Card>
-            <Card className="min-w-0 p-3 sm:p-4">
-              <PiggyBank className="h-4 w-4 text-[var(--primary-strong)]" />
-              <p className="mt-2 text-xs text-[var(--muted)]">Economia</p>
-              <p className="mt-0.5 text-[0.95rem] font-semibold tracking-tight tabular-nums sm:text-lg">{formatCurrency(summary.savings)}</p>
-            </Card>
+            <Link href={listHref({ tipo: "income" })} className={`min-w-0 ${linkCard}`}>
+              <Card className="h-full min-w-0 p-3 sm:p-4">
+                <ArrowDownLeft className="h-4 w-4 text-[var(--positive)]" />
+                <p className="mt-2 text-xs text-[var(--muted)]">
+                  {summary.incomeFromProfile ? "Renda (cadastrada)" : "Entradas"}
+                </p>
+                <p className="mt-0.5 text-[0.95rem] font-semibold tracking-tight tabular-nums sm:text-lg">
+                  {formatCurrency(summary.income)}
+                </p>
+              </Card>
+            </Link>
+            <Link href={listHref({ tipo: "expense" })} className={`min-w-0 ${linkCard}`}>
+              <Card className="h-full min-w-0 p-3 sm:p-4">
+                <ArrowUpRight className="h-4 w-4 text-[var(--negative)]" />
+                <p className="mt-2 text-xs text-[var(--muted)]">Gastos</p>
+                <p className="mt-0.5 text-[0.95rem] font-semibold tracking-tight tabular-nums sm:text-lg">
+                  {formatCurrency(summary.expenses)}
+                </p>
+              </Card>
+            </Link>
+            <Link href={listHref()} className={`min-w-0 ${linkCard}`}>
+              <Card className="h-full min-w-0 p-3 sm:p-4">
+                <PiggyBank className="h-4 w-4 text-[var(--primary-strong)]" />
+                <p className="mt-2 text-xs text-[var(--muted)]">Economia</p>
+                <p className="mt-0.5 text-[0.95rem] font-semibold tracking-tight tabular-nums sm:text-lg">{formatCurrency(summary.savings)}</p>
+              </Card>
+            </Link>
           </div>
 
           <Card className="mb-5 p-5 lg:mb-0">
@@ -185,16 +201,29 @@ export default async function DashboardPage({ searchParams }: Props) {
               <span className="text-xs text-[var(--muted)]">{transactions.length} lançamentos</span>
             </div>
             <div className="grid grid-cols-2 gap-5 text-sm sm:grid-cols-4 lg:grid-cols-2">
-              <div>
-                <p className="text-xs text-[var(--muted)]">Maior categoria</p>
-                <p className="mt-1 font-medium">{breakdown[0]?.name ?? "—"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-[var(--muted)]">Maior gasto</p>
-                <p className="mt-1 font-medium tabular-nums">
-                  {biggest ? formatCurrency(biggest.amount) : "—"}
-                </p>
-              </div>
+              {breakdown[0] ? (
+                <Link href={listHref({ categoria: breakdown[0].categoryId })} className="-m-1.5 rounded-lg p-1.5 hover:bg-[var(--surface-2)]">
+                  <p className="text-xs text-[var(--muted)]">Maior categoria</p>
+                  <p className="mt-1 font-medium">{breakdown[0].name}</p>
+                </Link>
+              ) : (
+                <div>
+                  <p className="text-xs text-[var(--muted)]">Maior categoria</p>
+                  <p className="mt-1 font-medium">—</p>
+                </div>
+              )}
+              {biggest ? (
+                <Link href={listHref({ categoria: biggest.categoryId })} className="-m-1.5 rounded-lg p-1.5 hover:bg-[var(--surface-2)]">
+                  <p className="text-xs text-[var(--muted)]">Maior gasto</p>
+                  <p className="mt-1 truncate font-medium tabular-nums">{formatCurrency(biggest.amount)}</p>
+                  <p className="truncate text-xs text-[var(--muted)]">{biggest.description}</p>
+                </Link>
+              ) : (
+                <div>
+                  <p className="text-xs text-[var(--muted)]">Maior gasto</p>
+                  <p className="mt-1 font-medium tabular-nums">—</p>
+                </div>
+              )}
               <div>
                 <p className="text-xs text-[var(--muted)]">Renda cadastrada</p>
                 <p className="mt-1 font-medium tabular-nums">{formatCurrency(profile.income)}</p>
@@ -263,7 +292,7 @@ export default async function DashboardPage({ searchParams }: Props) {
                 {breakdown.map((item) => (
                   <Link
                     key={item.categoryId}
-                    href={`/transacoes?categoria=${item.categoryId}&mes=${month}`}
+                    href={listHref({ categoria: item.categoryId })}
                     className="block"
                   >
                     <div className="mb-1.5 flex items-center justify-between text-sm">
@@ -288,13 +317,13 @@ export default async function DashboardPage({ searchParams }: Props) {
               </div>
               <div className="space-y-3">
                 {byPayment.map((item) => (
-                  <div key={item.method}>
+                  <Link key={item.method} href={listHref({ tipo: "expense", forma: item.method })} className="block">
                     <div className="mb-1.5 flex items-center justify-between text-sm">
                       <span>{item.label}</span>
                       <span className="font-medium tabular-nums">{formatCurrency(item.total)}</span>
                     </div>
                     <ProgressBar percent={item.percentOfExpenses} />
-                  </div>
+                  </Link>
                 ))}
               </div>
             </Card>
@@ -303,7 +332,7 @@ export default async function DashboardPage({ searchParams }: Props) {
           <Card className="p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-[0.95rem] font-semibold tracking-tight">Últimos lançamentos</h2>
-              <Link href={`/transacoes?mes=${month}`} className="text-sm font-medium text-[var(--primary-strong)]">
+              <Link href={listHref()} className="text-sm font-medium text-[var(--primary-strong)]">
                 Ver tudo
               </Link>
             </div>
@@ -318,7 +347,11 @@ export default async function DashboardPage({ searchParams }: Props) {
                 {recent.map((t) => {
                   const category = getCategoryById(t.categoryId);
                   return (
-                    <div key={t.id} className="flex items-center justify-between gap-3 py-3">
+                    <Link
+                      key={t.id}
+                      href={listHref({ categoria: t.categoryId })}
+                      className="-mx-2 flex items-center justify-between gap-3 rounded-lg px-2 py-3 hover:bg-[var(--surface-2)]"
+                    >
                       <div className="flex min-w-0 items-center gap-3">
                         <CategoryBadge
                           categoryId={t.categoryId}
@@ -341,7 +374,7 @@ export default async function DashboardPage({ searchParams }: Props) {
                         {t.type === "income" ? "+" : "-"}
                         {formatCurrency(t.amount)}
                       </p>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>

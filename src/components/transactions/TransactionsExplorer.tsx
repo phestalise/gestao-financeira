@@ -25,10 +25,16 @@ function signed(t: Transaction): number {
   return t.type === "income" ? t.amount : -t.amount;
 }
 
-export function TransactionsExplorer({ initialTransactions }: { initialTransactions: Transaction[] }) {
+export function TransactionsExplorer({
+  initialTransactions,
+  initialType = "all",
+}: {
+  initialTransactions: Transaction[];
+  initialType?: TypeFilter;
+}) {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>(initialType);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
