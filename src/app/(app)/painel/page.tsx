@@ -180,8 +180,13 @@ export default async function DashboardPage({ searchParams }: Props) {
                 <ArrowUpRight className="h-4 w-4 text-[var(--negative)]" />
                 <p className="mt-2 text-xs text-[var(--muted)]">Gastos</p>
                 <p className="mt-0.5 text-[0.95rem] font-semibold tracking-tight tabular-nums sm:text-lg">
-                  {formatCurrency(summary.expenses)}
+                  {formatCurrency(summary.expenses + summary.separateExpenses)}
                 </p>
+                {summary.separateExpenses > 0 && (
+                  <p className="mt-0.5 truncate text-[10px] text-[var(--muted)]">
+                    inclui {formatCurrency(summary.separateExpenses)} do casamento
+                  </p>
+                )}
               </Card>
             </Link>
             <Link href={listHref()} className={`min-w-0 ${linkCard}`}>
