@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAccount, EmailTakenError } from "@/lib/firebase/accounts";
-import { createSessionToken, sessionCookieOptions, SESSION_COOKIE } from "@/lib/auth/session";
+import { sessionCookieOptions, SESSION_COOKIE } from "@/lib/auth/session";
+import { startSession } from "@/lib/auth/session-store";
+import { clientIp, LIMITS, tooManyRequests, withinLimits } from "@/lib/security/rate-limit";
 
 const signupSchema = z.object({
   name: z.string().trim().min(1, "Diga como podemos te chamar.").max(60),
@@ -16,10 +18,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Dados inválidos." }, { status: 400 });
   }
 
+  if (!(await withinLimits([[`signup-ip:${clientIp(req)}`, LIMITS.signupPerIp]]))) {
+    return tooManyRequests();
+  }
+
   try {
     const account = await createAccount(parsed.data);
     const res = NextResponse.json({ ok: true, name: account.name });
-    res.cookies.set(SESSION_COOKIE, await createSessionToken(account.uid), sessionCookieOptions);
+    res.cookies.set(SESSION_COOKIE, await startSession(account.uid), sessionCookieOptions);
     return res;
   } catch (err) {
     if (err instanceof EmailTakenError) {

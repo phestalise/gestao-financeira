@@ -1,9 +1,17 @@
-// Sessão = cookie assinado "uid.expiraEm.assinatura" (HMAC-SHA256 com APP_SECRET).
+// Sessão = cookie assinado "uid.sessionId.expiraEm.assinatura" (HMAC-SHA256 com APP_SECRET).
 // Só usa Web Crypto, então roda tanto no proxy quanto nas rotas e páginas do servidor.
+// A assinatura prova que o cookie foi emitido pelo app; se a sessão ainda vale (não saiu, não
+// trocou a senha) é checado em users/{uid}/sessions/{sessionId}, ver session-store.ts.
 const encoder = new TextEncoder();
 
 export const SESSION_COOKIE = "gf_session";
 export const SESSION_MAX_AGE = 60 * 60 * 24 * 180; // 180 dias, em segundos
+
+export interface SessionClaims {
+  uid: string;
+  sessionId: string;
+  expiresAt: number;
+}
 
 function getSecret(): string {
   const secret = process.env.APP_SECRET;
@@ -32,19 +40,26 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-export async function createSessionToken(uid: string): Promise<string> {
-  const payload = `${uid}.${Date.now() + SESSION_MAX_AGE * 1000}`;
+export function newSessionId(): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+export async function createSessionToken({ uid, sessionId, expiresAt }: SessionClaims): Promise<string> {
+  const payload = `${uid}.${sessionId}.${expiresAt}`;
   return `${payload}.${await sign(payload)}`;
 }
 
-// Devolve o uid dono da sessão, ou null se o cookie for inválido ou tiver expirado.
-export async function verifySessionToken(token: string | undefined): Promise<string | null> {
+// Devolve os dados da sessão se o cookie tiver assinatura válida e não tiver expirado; senão null.
+export async function verifySessionToken(token: string | undefined): Promise<SessionClaims | null> {
   if (!token) return null;
   const parts = token.split(".");
-  if (parts.length !== 3) return null;
-  const [uid, expiresAt, signature] = parts;
-  if (!uid || !(Number(expiresAt) > Date.now())) return null;
-  return safeEqual(signature, await sign(`${uid}.${expiresAt}`)) ? uid : null;
+  if (parts.length !== 4) return null;
+  const [uid, sessionId, expiresAt, signature] = parts;
+  if (!uid || !sessionId || !(Number(expiresAt) > Date.now())) return null;
+  if (!safeEqual(signature, await sign(`${uid}.${sessionId}.${expiresAt}`))) return null;
+  return { uid, sessionId, expiresAt: Number(expiresAt) };
 }
 
 export const sessionCookieOptions = {

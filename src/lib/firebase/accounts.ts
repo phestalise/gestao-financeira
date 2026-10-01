@@ -1,6 +1,6 @@
 import { randomBytes, scrypt as scryptCb, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
-import { getDb, LEGACY_OWNER_ID } from "@/lib/firebase/admin";
+import { getDb } from "@/lib/firebase/admin";
 
 const scrypt = promisify(scryptCb) as (password: string, salt: string, keylen: number) => Promise<Buffer>;
 
@@ -37,12 +37,12 @@ async function checkPassword(password: string, stored: string): Promise<boolean>
   return expected.length === candidate.length && timingSafeEqual(expected, candidate);
 }
 
-// Quem já usava o app antes do cadastro existir tem os dados em users/default-user.
-// O e-mail em OWNER_EMAIL herda esse espaço ao criar a conta.
-function uidForNewAccount(email: string): string {
+// Quem já usava o app antes do cadastro existir tem os dados em users/default-user. Esse espaço
+// não é herdado pelo cadastro do site, que não confirma o e-mail: qualquer um poderia se cadastrar
+// com OWNER_EMAIL e levar os dados. A conta do dono é ligada a ele por scripts/reset-password.cjs.
+function isOwnerEmail(email: string): boolean {
   const owner = process.env.OWNER_EMAIL;
-  if (owner && normalizeEmail(owner) === email) return LEGACY_OWNER_ID;
-  return getDb().collection("users").doc().id;
+  return !!owner && normalizeEmail(owner) === email;
 }
 
 export class EmailTakenError extends Error {
@@ -58,8 +58,9 @@ export async function createAccount(input: {
   invitedBy?: string;
 }): Promise<Account> {
   const email = normalizeEmail(input.email);
+  if (isOwnerEmail(email)) throw new EmailTakenError();
   const account: Account = {
-    uid: uidForNewAccount(email),
+    uid: getDb().collection("users").doc().id,
     email,
     name: input.name.trim(),
     passwordHash: await hashPassword(input.password),

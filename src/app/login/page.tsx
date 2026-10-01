@@ -31,9 +31,7 @@ function LoginForm() {
       return;
     }
 
-    const next = searchParams.get("next");
-    // só aceita caminhos internos, para o parâmetro não virar redirecionamento para outro site
-    router.replace(next?.startsWith("/") && !next.startsWith("//") ? next : "/painel");
+    router.replace(safeNextPath(searchParams.get("next")));
     router.refresh();
   }
 
@@ -75,4 +73,12 @@ export default function LoginPage() {
       </Suspense>
     </AuthShell>
   );
+}
+
+// Só aceita caminhos deste site, para o parâmetro não virar redirecionamento para outro.
+// Conferir o texto não basta: o navegador lê "/\site.com" ou "/<tab>/site.com" como "//site.com".
+function safeNextPath(next: string | null): string {
+  if (!next?.startsWith("/")) return "/painel";
+  const url = new URL(next, window.location.origin);
+  return url.origin === window.location.origin ? url.pathname + url.search + url.hash : "/painel";
 }

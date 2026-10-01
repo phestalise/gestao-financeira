@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatWithFinancialContext, type ChatImage } from "@/lib/ai/gemini";
 import { buildFinancialContext } from "@/lib/services/financialContext";
-import { updateTransaction, deleteTransaction, getTransaction } from "@/lib/firebase/transactions";
+import { updateTransaction, getTransaction } from "@/lib/firebase/transactions";
 import { formatCurrency } from "@/lib/utils/currency";
+import { transactionUpdateSchema } from "@/lib/validation/transaction";
+import { getCurrentUserId } from "@/lib/auth/current-user";
+import { LIMITS, tooManyRequests, withinLimits } from "@/lib/security/rate-limit";
 
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
 // O corpo de uma função na Vercel é limitado a ~4,5 MB; o cliente já reduz a imagem antes de enviar.
 const MAX_IMAGE_BASE64_LENGTH = 4_000_000;
+// Limites de texto: cada chamada à IA custa cota da GEMINI_API_KEY, e o histórico vai inteiro a cada mensagem.
+const MAX_MESSAGE_LENGTH = 2_000;
+const MAX_HISTORY_ITEMS = 20;
+const MAX_HISTORY_ITEM_LENGTH = 2_000;
 
 interface ChatRequestBody {
   message: string;
@@ -31,6 +38,18 @@ export async function POST(req: NextRequest) {
   if (!body || typeof body.message !== "string" || (!body.message.trim() && !image)) {
     return NextResponse.json({ error: "Mensagem vazia." }, { status: 400 });
   }
+  if (body.message.length > MAX_MESSAGE_LENGTH) {
+    return NextResponse.json({ error: "Mensagem longa demais." }, { status: 400 });
+  }
+  const history = (Array.isArray(body.history) ? body.history : [])
+    .filter((h) => (h?.role === "user" || h?.role === "assistant") && typeof h.content === "string")
+    .slice(-MAX_HISTORY_ITEMS)
+    .map((h) => ({ role: h.role, content: h.content.slice(0, MAX_HISTORY_ITEM_LENGTH) }));
+
+  const uid = await getCurrentUserId();
+  if (!(await withinLimits([[`ai-hour:${uid}`, LIMITS.aiPerHour], [`ai-day:${uid}`, LIMITS.aiPerDay]]))) {
+    return tooManyRequests("Você usou bastante o assistente agora. Tenta de novo daqui a pouco.");
+  }
 
   const financialContext = await buildFinancialContext();
 
@@ -39,7 +58,7 @@ export async function POST(req: NextRequest) {
     result = await chatWithFinancialContext({
       message: body.message,
       image,
-      history: body.history ?? [],
+      history,
       financialContext,
     });
   } catch (error) {
@@ -81,7 +100,12 @@ export async function POST(req: NextRequest) {
           reply: "Não encontrei esse lançamento para corrigir.",
         });
       }
-      const updated = await updateTransaction(body.lastTransactionId, result.transaction ?? {});
+      // A IA sugere os campos; passam pela mesma validação de uma edição feita na tela.
+      const changes = transactionUpdateSchema.safeParse(result.transaction ?? {});
+      if (!changes.success) {
+        return NextResponse.json({ action: "clarify", reply: "Não entendi bem a correção. Pode detalhar?" });
+      }
+      const updated = await updateTransaction(body.lastTransactionId, changes.data);
       return NextResponse.json({
         action: "update_transaction",
         reply: `Atualizei o lançamento para ${formatCurrency(updated?.amount ?? existing.amount)}.`,
@@ -96,10 +120,16 @@ export async function POST(req: NextRequest) {
           reply: "Não sei qual lançamento apagar. Pode especificar?",
         });
       }
-      const deleted = await deleteTransaction(body.lastTransactionId);
+      // Não apaga direto: o pedido pode vir de um texto escondido numa imagem. Quem confirma é a pessoa,
+      // pelo botão do chat, que chama DELETE /api/transactions/{id}.
+      const target = await getTransaction(body.lastTransactionId);
+      if (!target) {
+        return NextResponse.json({ action: "clarify", reply: "Não encontrei esse lançamento." });
+      }
       return NextResponse.json({
         action: "delete_transaction",
-        reply: deleted ? "Apaguei esse lançamento." : "Não encontrei esse lançamento.",
+        reply: `Quer mesmo apagar "${target.description}" (${formatCurrency(target.amount)})?`,
+        deleteTarget: { id: target.id },
       });
     }
 

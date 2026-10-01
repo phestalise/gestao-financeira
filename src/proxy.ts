@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/session";
+import { isSessionActive } from "@/lib/auth/session-store";
 
 // Páginas abertas: a home, as telas de acesso e os arquivos estáticos.
 const PUBLIC_PATHS = new Set([
@@ -20,14 +21,15 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  let uid: string | null = null;
+  let claims;
   try {
-    uid = await verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
+    claims = await verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
   } catch {
     return new NextResponse("App não configurado: defina APP_SECRET.", { status: 503 });
   }
 
-  if (uid) return NextResponse.next();
+  // Cookie com assinatura válida, mas de uma sessão encerrada (saiu ou trocou a senha), não entra.
+  if (claims && (await isSessionActive(claims))) return NextResponse.next();
 
   if (pathname.startsWith("/api")) {
     return NextResponse.json({ error: "Não autenticado." }, { status: 401 });

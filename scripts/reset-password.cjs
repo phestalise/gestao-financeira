@@ -1,4 +1,7 @@
-// Troca a senha de uma conta existente (logins/{email}), no mesmo formato de src/lib/firebase/accounts.ts.
+// Troca a senha de uma conta existente (logins/{email}), no mesmo formato de src/lib/firebase/accounts.ts,
+// e encerra todas as sessões abertas dela.
+// Para o e-mail de OWNER_EMAIL, também cria a conta se ainda não existir, ligada a users/default-user
+// (os dados de antes do cadastro) — o cadastro pelo site não aceita esse e-mail.
 // Uso: node scripts/reset-password.cjs voce@email.com [nova-senha]
 // Sem a senha no comando, ela é pedida no terminal, sem aparecer na tela nem ficar no histórico do shell.
 const { loadEnvConfig } = require("@next/env");
@@ -57,8 +60,11 @@ async function main() {
       privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
     }),
   });
-  const ref = getFirestore(app).collection("logins").doc(email);
-  if (!(await ref.get()).exists) {
+  const db = getFirestore(app);
+  const ref = db.collection("logins").doc(email);
+  const existing = await ref.get();
+  const isOwner = (process.env.OWNER_EMAIL || "").trim().toLowerCase() === email;
+  if (!existing.exists && !isOwner) {
     console.error(`Nenhuma conta com o e-mail ${email}.`);
     process.exit(1);
   }
@@ -71,8 +77,23 @@ async function main() {
 
   const salt = randomBytes(16).toString("hex");
   const hash = await promisify(scrypt)(password, salt, 64);
-  await ref.update({ passwordHash: `${salt}:${hash.toString("hex")}` });
-  console.log(`Senha de ${email} atualizada. Já dá para entrar.`);
+  const passwordHash = `${salt}:${hash.toString("hex")}`;
+
+  if (existing.exists) {
+    await ref.update({ passwordHash, ...(isOwner ? { uid: "default-user" } : {}) });
+  } else {
+    await ref.create({ uid: "default-user", email, name: "Você", passwordHash, createdAt: new Date().toISOString() });
+    await db.collection("users").doc("default-user").set({ email }, { merge: true });
+  }
+
+  // Derruba as sessões abertas (de quem quer que tenha a senha antiga).
+  const uids = new Set([existing.data()?.uid, isOwner ? "default-user" : undefined].filter(Boolean));
+  for (const uid of uids) {
+    const sessions = await db.collection("users").doc(uid).collection("sessions").listDocuments();
+    await Promise.all(sessions.map((s) => s.delete()));
+  }
+
+  console.log(`Senha de ${email} ${existing.exists ? "atualizada" : "criada"}. Sessões antigas encerradas. Já dá para entrar.`);
 }
 
 main();

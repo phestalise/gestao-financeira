@@ -38,6 +38,8 @@ interface ChatMessage {
   imageUrl?: string;
   preview?: AIParsedTransaction;
   previewStatus?: "pending" | "saving" | "saved";
+  // Exclusão pedida ao assistente: só acontece quando a pessoa confirma no botão.
+  deleteTarget?: { id: string; status: "pending" | "deleting" | "deleted" };
 }
 
 interface PendingImage {
@@ -180,12 +182,12 @@ export function ChatAssistant({ firstName, snapshot }: { firstName?: string; sna
         }),
       });
       const data = await res.json();
-      addAssistant(data.reply ?? "Tive um problema para responder agora. Tenta de novo?", {
+      addAssistant(data.reply ?? data.error ?? "Tive um problema para responder agora. Tenta de novo?", {
         preview: data.preview,
         previewStatus: data.preview ? "pending" : undefined,
+        deleteTarget: data.deleteTarget ? { id: data.deleteTarget.id, status: "pending" } : undefined,
       });
-      if (data.action === "delete_transaction") setLastTransactionId(null);
-      if (data.action === "update_transaction" || data.action === "delete_transaction") router.refresh();
+      if (data.action === "update_transaction") router.refresh();
     } catch {
       addAssistant("Tive um problema para responder agora. Tenta de novo?");
     } finally {
@@ -215,6 +217,26 @@ export function ChatAssistant({ firstName, snapshot }: { firstName?: string; sna
     } catch {
       setPreviewStatus(message.id, "pending");
       addAssistant("Não consegui registrar. Tenta de novo?");
+    } finally {
+      scrollToEnd();
+    }
+  }
+
+  async function confirmDelete(message: ChatMessage) {
+    const target = message.deleteTarget;
+    if (!target || target.status !== "pending") return;
+    const setStatus = (status: NonNullable<ChatMessage["deleteTarget"]>["status"]) =>
+      setMessages((prev) => prev.map((m) => (m.id === message.id ? { ...m, deleteTarget: { ...target, status } } : m)));
+    setStatus("deleting");
+    try {
+      const res = await fetch(`/api/transactions/${encodeURIComponent(target.id)}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setStatus("deleted");
+      if (lastTransactionId === target.id) setLastTransactionId(null);
+      router.refresh();
+    } catch {
+      setStatus("pending");
+      addAssistant("Não consegui apagar. Tenta de novo?");
     } finally {
       scrollToEnd();
     }
@@ -290,6 +312,19 @@ export function ChatAssistant({ firstName, snapshot }: { firstName?: string; sna
                   <span className="ai-orb relative mt-0.5 h-7 w-7 shrink-0" />
                   <div className="min-w-0 max-w-[85%] flex-1 pt-0.5">
                     <RichText text={m.content} />
+                    {m.deleteTarget && (
+                      <button
+                        onClick={() => confirmDelete(m)}
+                        disabled={m.deleteTarget.status !== "pending"}
+                        className="mt-3 rounded-xl border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--negative)] transition-colors hover:bg-[var(--surface-hover)] disabled:opacity-60"
+                      >
+                        {m.deleteTarget.status === "deleted"
+                          ? "Apagado"
+                          : m.deleteTarget.status === "deleting"
+                            ? "Apagando…"
+                            : "Sim, apagar"}
+                      </button>
+                    )}
                     {m.preview && (
                       <PreviewCard
                         preview={m.preview}
