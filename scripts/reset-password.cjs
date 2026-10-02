@@ -2,8 +2,9 @@
 // e encerra todas as sessões abertas dela.
 // Para o e-mail de OWNER_EMAIL, também cria a conta se ainda não existir, ligada a users/default-user
 // (os dados de antes do cadastro) — o cadastro pelo site não aceita esse e-mail.
-// Uso: node scripts/reset-password.cjs voce@email.com [nova-senha]
-// Sem a senha no comando, ela é pedida no terminal, sem aparecer na tela nem ficar no histórico do shell.
+// Uso: node scripts/reset-password.cjs voce@email.com
+// A senha é pedida no terminal, sem aparecer na tela. Não é aceita como argumento: ficaria no
+// histórico do shell e visível para outros processos (ps).
 const { loadEnvConfig } = require("@next/env");
 const { randomBytes, scrypt } = require("node:crypto");
 const { promisify } = require("node:util");
@@ -69,7 +70,7 @@ async function main() {
     process.exit(1);
   }
 
-  const password = process.argv[3] ?? (await askHidden("Nova senha (mín. 8 caracteres): "));
+  const password = await askHidden("Nova senha (mín. 8 caracteres): ");
   if (password.length < 8) {
     console.error("A senha precisa ter pelo menos 8 caracteres.");
     process.exit(1);
